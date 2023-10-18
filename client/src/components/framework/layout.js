@@ -23,7 +23,7 @@ class Layout extends React.Component {
 
   render() {
     const { children } = this.props;
-    const [leftSidebar, renderGraph, rightSidebar] = children;
+    const [leftSidebar, renderGraph, rightSidebar, bottomSidebar] = children;
     return (
       <div
         style={{
@@ -35,8 +35,11 @@ class Layout extends React.Component {
             globals.rightSidebarWidth + 1
           }px [right-sidebar-end]
         `,
-          gridTemplateRows: "[top] auto [bottom]",
-          gridTemplateAreas: "left-sidebar | graph | right-sidebar",
+          gridTemplateRows: "[top] auto [middle] auto [bottom]",
+          gridTemplateAreas: `
+            "left-sidebar graph right-sidebar"
+            "bottom-sidebar bottom-sidebar bottom-sidebar"
+            `,
           columnGap: "0px",
           justifyItems: "stretch",
           alignItems: "stretch",
@@ -50,7 +53,7 @@ class Layout extends React.Component {
       >
         <div
           style={{
-            gridArea: "top / left-sidebar-start / bottom / left-sidebar-end",
+            gridArea: "top / left-sidebar-start / middle / left-sidebar-end",
             position: "relative",
             height: "inherit",
             overflowY: "auto",
@@ -61,7 +64,7 @@ class Layout extends React.Component {
         <div
           style={{
             zIndex: 0,
-            gridArea: "top / graph-start / bottom / graph-end",
+            gridArea: "top / graph-start / middle / graph-end",
             position: "relative",
             height: "inherit",
           }}
@@ -73,13 +76,24 @@ class Layout extends React.Component {
         </div>
         <div
           style={{
-            gridArea: "top / right-sidebar-start / bottom / right-sidebar-end",
+            gridArea: "top / right-sidebar-start / middle / right-sidebar-end",
             position: "relative",
             height: "inherit",
             overflowY: "auto",
           }}
         >
           {rightSidebar}
+        </div>
+        <div
+          style={{
+            gridArea:
+              "middle / left-sidebar-start / bottom / right-sidebar-end",
+            position: "relative",
+            width: "inherit",
+            overflowY: "auto",
+          }}
+        >
+          {bottomSidebar}
         </div>
       </div>
     );

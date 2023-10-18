@@ -8,6 +8,7 @@ import * as globals from "../../globals";
   scatterplotYYaccessor: state.controls.scatterplotYYaccessor,
 }))
 class RightSidebar extends React.Component {
+  // Bar should capitalized...
   render() {
     return (
       <div
