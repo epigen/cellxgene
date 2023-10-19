@@ -19,6 +19,7 @@ import genesetsUI from "./genesetsUI";
 import autosave from "./autosave";
 import centroidLabels from "./centroidLabels";
 import pointDialation from "./pointDilation";
+import llmEmbeddings from "./llmEmbeddings";
 import { gcMiddleware as annoMatrixGC } from "../annoMatrix";
 
 import undoableConfig from "./undoableConfig";
@@ -41,6 +42,7 @@ const Reducer = undoable(
     ["centroidLabels", centroidLabels],
     ["pointDilation", pointDialation],
     ["autosave", autosave],
+    ["llmEmbeddings", llmEmbeddings], // TODO might need to go before continouosselection or annotations
   ]),
   [
     "annoMatrix",
@@ -55,6 +57,7 @@ const Reducer = undoable(
     "centroidLabels",
     "genesets",
     "annotations",
+    "llmEmbeddings",
   ],
   undoableConfig
 );

@@ -11,6 +11,7 @@ import * as annoActions from "./annotation";
 import * as viewActions from "./viewStack";
 import * as embActions from "./embedding";
 import * as genesetActions from "./geneset";
+import * as llmEmbeddingsActions from "./llmEmbeddings";
 
 function setGlobalConfig(config) {
   /**
@@ -236,6 +237,7 @@ function fetchJson(pathAndQuery) {
 }
 
 export default {
+  fetchJson,
   doInitialDataLoad,
   requestDifferentialExpression,
   requestSingleGeneExpressionCountsForColoringPOST,
@@ -272,4 +274,8 @@ export default {
   genesetDelete: genesetActions.genesetDelete,
   genesetAddGenes: genesetActions.genesetAddGenes,
   genesetDeleteGenes: genesetActions.genesetDeleteGenes,
+  requestEmbeddingLLMWithTextAction:
+    llmEmbeddingsActions.requestEmbeddingLLMWithTextAction,
+  requestEmbeddingLLMWithCellsAction:
+    llmEmbeddingsActions.requestEmbeddingLLMWithCellsAction,
 };

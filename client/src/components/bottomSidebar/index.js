@@ -1,9 +1,36 @@
 import React from "react";
+import { connect } from "react-redux";
 import { Button, InputGroup } from "@blueprintjs/core";
+import actions from "../../actions";
 import * as globals from "../../globals";
 
+@connect((state) => state.llmEmbeddings)
 class BottomSideBar extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      inputText: "",
+    };
+  }
+
+  handleInputChange = (e) => {
+    this.setState({ inputText: e.target.value });
+  };
+
+  findCellsClick = () => {
+    const { dispatch } = this.props;
+    const { inputText } = this.state;
+    dispatch(actions.requestEmbeddingLLMWithTextAction(inputText));
+  };
+
+  describeSelect1Click = () => {
+    const { dispatch } = this.props;
+    dispatch(actions.requestEmbeddingLLMWithCellsAction());
+  };
+
   render() {
+    const { outputText } = this.props;
+    const { inputText } = this.state;
     return (
       <div
         style={{
@@ -22,7 +49,7 @@ class BottomSideBar extends React.Component {
       >
         <div style={{ flex: 2 }}>
           <InputGroup
-            value="Test"
+            value={inputText}
             fill
             onChange={this.handleInputChange}
             placeholder="Type your message..."
@@ -48,7 +75,7 @@ class BottomSideBar extends React.Component {
             flex: 1,
           }}
         >
-          some text
+          {outputText}
         </div>
       </div>
     );
