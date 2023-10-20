@@ -38,6 +38,8 @@ class DatasetConfig(BaseConfig):
             self.diffexp__lfc_cutoff = default_config["diffexp"]["lfc_cutoff"]
             self.diffexp__top_n = default_config["diffexp"]["top_n"]
 
+            self.llmembs__enable = default_config["llmembs"]["enable"]
+
             self.X_approximate_distribution = default_config["X_approximate_distribution"]
 
         except KeyError as e:
@@ -52,6 +54,7 @@ class DatasetConfig(BaseConfig):
         self.handle_user_annotations(context)
         self.handle_embeddings()
         self.handle_diffexp(context)
+        self.handle_llmembs(context)
         self.handle_X_approximate_distribution()
 
     def get_data_adaptor(self):
@@ -180,6 +183,9 @@ class DatasetConfig(BaseConfig):
             context["messagefn"](
                 "CAUTION: due to the size of your dataset, " "running differential expression may take longer or fail."
             )
+
+    def handle_llmembs(self, context):
+        self.validate_correct_type_of_configuration_attribute("llmembs__enable", bool)
 
     def handle_X_approximate_distribution(self):
         self.validate_correct_type_of_configuration_attribute("X_approximate_distribution", str)

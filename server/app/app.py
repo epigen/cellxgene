@@ -48,12 +48,12 @@ def _cache_control(always, **cache_kwargs):
 
 
 def cache_control(**cache_kwargs):
-    """ config driven """
+    """config driven"""
     return _cache_control(False, **cache_kwargs)
 
 
 def cache_control_always(**cache_kwargs):
-    """ always generate headers, regardless of the config """
+    """always generate headers, regardless of the config"""
     return _cache_control(True, **cache_kwargs)
 
 
@@ -167,6 +167,20 @@ class LayoutObsAPI(Resource):
         return common_rest.layout_obs_get(request, data_adaptor)
 
 
+class LLMEmbeddingsObsAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_obs_post(request, data_adaptor)
+
+
+class LLMEmbeddingsTextAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_text_post(request, data_adaptor)
+
+
 class GenesetsAPI(Resource):
     @cache_control(public=True, max_age=ONE_WEEK)
     @rest_get_data_adaptor
@@ -222,13 +236,15 @@ def get_api_dataroot_resources(bp_dataroot):
     # Computation routes
     add_resource(DiffExpObsAPI, "/diffexp/obs")
     add_resource(LayoutObsAPI, "/layout/obs")
+    add_resource(LLMEmbeddingsObsAPI, "/llmembs/obs")
+    add_resource(LLMEmbeddingsTextAPI, "/llmembs/text")
     return api
 
 
 class Server:
     @staticmethod
     def _before_adding_routes(app, app_config):
-        """ will be called before routes are added, during __init__.  Subclass protocol """
+        """will be called before routes are added, during __init__.  Subclass protocol"""
         pass
 
     def __init__(self, app_config):

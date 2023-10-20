@@ -7,6 +7,7 @@ from pandas.core.dtypes.dtypes import CategoricalDtype
 from scipy import sparse
 
 import server.common.compute.diffexp_generic as diffexp_generic
+import server.common.compute.llm_embeddings as llm_embeddings
 import server.common.compute.estimate_distribution as estimate_distribution
 from server.common.colors import convert_anndata_category_colors_to_cxg_category_colors
 from server.common.constants import Axis, MAX_LAYOUTS, XApproximateDistribution
@@ -92,7 +93,7 @@ class AnndataAdaptor(DataAdaptor):
         """
         self.original_obs_index = self.data.obs.index
 
-        for (ax_name, var_name) in ((Axis.OBS, "obs"), (Axis.VAR, "var")):
+        for ax_name, var_name in ((Axis.OBS, "obs"), (Axis.VAR, "var")):
             config_name = f"single_dataset__{var_name}_names"
             parameter_name = f"{var_name}_names"
             name = getattr(self.server_config, config_name)
@@ -175,10 +176,11 @@ class AnndataAdaptor(DataAdaptor):
             raise DatasetAccessError("Out of memory - file is too large for available memory.")
         except Exception:
             import traceback
+
             message = (
                 "File not found or is inaccessible. File must be an .h5ad object. "
                 "Please check your input and try again."
-                )
+            )
             if self.server_config.app__verbose:
                 message += f"\n{traceback.format_exc()}"
             raise DatasetAccessError(message)
@@ -242,8 +244,10 @@ class AnndataAdaptor(DataAdaptor):
             )
         if self.data.X.dtype < np.float32:
             if self.data.isbacked:
-                raise DatasetAccessError(f"Data matrix in {self.data.X.dtype} format is not supported in backed mode."
-                                         " Please reload without --backed, or convert matrix to float32")
+                raise DatasetAccessError(
+                    f"Data matrix in {self.data.X.dtype} format is not supported in backed mode."
+                    " Please reload without --backed, or convert matrix to float32"
+                )
             warnings.warn(
                 f"Anndata data matrix is in unsupported {self.data.X.dtype} format -- will be cast to float32"
             )
@@ -329,6 +333,18 @@ class AnndataAdaptor(DataAdaptor):
         if lfc_cutoff is None:
             lfc_cutoff = self.dataset_config.diffexp__lfc_cutoff
         return diffexp_generic.diffexp_ttest(self, maskA, maskB, top_n, lfc_cutoff)
+
+    def compute_llmembs_obs_to_text(self, mask):
+        return llm_embeddings.llm_obs_to_text(self, mask)
+
+    def compute_llmembs_text_to_annotations(self, text):
+        """
+        Computes an LLM embedding for each cell and compares it the embedding of the text and returns the distance
+
+        :param text: the text to embed
+        :return: pandas Series of cell embeddings
+        """
+        return llm_embeddings.llm_text_to_annotations(self, text=text)
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)
