@@ -4,7 +4,10 @@ import { Button, InputGroup } from "@blueprintjs/core";
 import actions from "../../actions";
 import * as globals from "../../globals";
 
-@connect((state) => state.llmEmbeddings)
+@connect((state) => ({
+  ...state.llmEmbeddings,
+  differential: state.differential,
+}))
 class BottomSideBar extends React.Component {
   constructor(props) {
     super(props);
@@ -20,17 +23,20 @@ class BottomSideBar extends React.Component {
   findCellsClick = () => {
     const { dispatch } = this.props;
     const { inputText } = this.state;
-    dispatch(actions.requestEmbeddingLLMWithTextAction(inputText));
+    dispatch(actions.requestEmbeddingLLMWithText(inputText));
   };
 
   describeSelect1Click = () => {
-    const { dispatch } = this.props;
-    dispatch(actions.requestEmbeddingLLMWithCellsAction());
+    const { dispatch, differential } = this.props;
+    if (differential.celllist1) {
+      dispatch(actions.requestEmbeddingLLMWithCells(differential.celllist1));
+    }
   };
 
   render() {
-    const { outputText } = this.props;
+    const { outputText, loading, differential } = this.props;
     const { inputText } = this.state;
+
     return (
       <div
         style={{
@@ -57,12 +63,16 @@ class BottomSideBar extends React.Component {
         </div>
         <Button
           onClick={this.findCellsClick}
+          disabled={!inputText}
+          loading={loading}
           style={{ margin: "0px 10px", padding: "0px 20px" }}
         >
           Find cells
         </Button>
         <Button
           onClick={this.describeSelect1Click}
+          disabled={!differential.celllist1}
+          loading={loading}
           style={{ margin: "0px 10px", padding: "0px 20px" }}
         >
           Describe select 1

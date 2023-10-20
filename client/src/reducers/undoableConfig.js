@@ -105,6 +105,8 @@ const saveOnActions = new Set([
   "annotation: delete label",
   "annotation: category edited",
 
+  "annotation: create continuous",
+
   /* geneset component action */
   "geneset: create",
   "geneset: delete",

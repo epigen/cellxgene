@@ -258,6 +258,8 @@ export default {
   clipAction: viewActions.clipAction,
   subsetAction: viewActions.subsetAction,
   resetSubsetAction: viewActions.resetSubsetAction,
+  annotationCreateContinuousAction:
+    annoActions.annotationCreateContinuousAction,
   annotationCreateCategoryAction: annoActions.annotationCreateCategoryAction,
   annotationRenameCategoryAction: annoActions.annotationRenameCategoryAction,
   annotationDeleteCategoryAction: annoActions.annotationDeleteCategoryAction,
@@ -274,8 +276,7 @@ export default {
   genesetDelete: genesetActions.genesetDelete,
   genesetAddGenes: genesetActions.genesetAddGenes,
   genesetDeleteGenes: genesetActions.genesetDeleteGenes,
-  requestEmbeddingLLMWithTextAction:
-    llmEmbeddingsActions.requestEmbeddingLLMWithTextAction,
-  requestEmbeddingLLMWithCellsAction:
-    llmEmbeddingsActions.requestEmbeddingLLMWithCellsAction,
+  requestEmbeddingLLMWithText: llmEmbeddingsActions.requestEmbeddingLLMWithText,
+  requestEmbeddingLLMWithCells:
+    llmEmbeddingsActions.requestEmbeddingLLMWithCells,
 };
