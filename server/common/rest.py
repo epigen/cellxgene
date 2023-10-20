@@ -397,3 +397,83 @@ def summarize_var_post(request, data_adaptor):
 
     key = request.args.get("key", default=None)
     return summarize_var_helper(request, data_adaptor, key, request.get_data())
+
+
+def llm_embeddings_text_post(request, data_adaptor):
+    """
+    Given a text description, return a cell annotation
+    """
+    try:
+        llm_embeddings_text_post.counter
+    except AttributeError:
+        llm_embeddings_text_post.counter = 0
+
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        text = args.get("text")
+
+        if text is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter text")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        labels = data_adaptor.compute_llmembs_text_to_annotations(text)
+
+        # compute a string-like hash and take the first 5 characters
+
+        annotation_name = f"{llm_embeddings_text_post.counter}_{text.replace(' ', '_')[:20]}"
+        llm_embeddings_text_post.counter += 1
+
+        labels.name = annotation_name
+        index_name = data_adaptor.parameters.get("obs_names")
+        labels.index = data_adaptor.data.obs[index_name]
+
+        fbs = data_adaptor.annotation_to_fbs_matrix(
+            Axis.OBS, [annotation_name], labels.to_frame()
+        )  # same as calling encode_matrix_fbs directly
+
+        return make_response(fbs, HTTPStatus.OK, {"Content-Type": "application/octet-stream"})
+
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_obs_post(request, data_adaptor):
+    """
+    Given a set of cells, return a text description for them
+    """
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        set1_filter = args.get("set1", {"filter": {}})["filter"]
+
+        if set1_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter set1")
+        if Axis.VAR in set1_filter:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "var axis filter not enabled")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        model_result = data_adaptor.llmembs_obs_to_text(set1_filter)
+        return make_response(model_result, HTTPStatus.OK, {"Content-Type": "application/json"})
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise

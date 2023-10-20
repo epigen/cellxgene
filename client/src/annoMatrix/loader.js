@@ -105,7 +105,8 @@ export default class AnnoMatrixLoader extends AnnoMatrix {
       * a primitive type, including null or undefined.
     If an array, it must be of same size as nObs and same type as Ctor
 		*/
-    colSchema.writable = true;
+
+    if (colSchema.writable === undefined) colSchema.writable = true;
     const colName = colSchema.name;
     if (
       _getColumnSchema(this.schema, "obs", colName) ||
@@ -126,10 +127,11 @@ export default class AnnoMatrixLoader extends AnnoMatrix {
       data = new Ctor(this.nObs).fill(value);
     }
     newAnnoMatrix._cache.obs = this._cache.obs.withCol(colName, data);
-    normalizeWritableCategoricalSchema(
-      colSchema,
-      newAnnoMatrix._cache.obs.col(colName)
-    );
+    if (colSchema.type === "categorical" || colSchema.type === undefined)
+      normalizeWritableCategoricalSchema(
+        colSchema,
+        newAnnoMatrix._cache.obs.col(colName)
+      );
     newAnnoMatrix.schema = addObsAnnoColumn(this.schema, colName, colSchema);
     return newAnnoMatrix;
   }

@@ -7,6 +7,7 @@ from pandas.core.dtypes.dtypes import CategoricalDtype
 from scipy import sparse
 
 import server.common.compute.diffexp_generic as diffexp_generic
+import server.common.compute.llm_embeddings as llm_embeddings
 import server.common.compute.estimate_distribution as estimate_distribution
 from server.common.colors import convert_anndata_category_colors_to_cxg_category_colors
 from server.common.constants import Axis, MAX_LAYOUTS, XApproximateDistribution
@@ -332,6 +333,18 @@ class AnndataAdaptor(DataAdaptor):
         if lfc_cutoff is None:
             lfc_cutoff = self.dataset_config.diffexp__lfc_cutoff
         return diffexp_generic.diffexp_ttest(self, maskA, maskB, top_n, lfc_cutoff)
+
+    def compute_llmembs_obs_to_text(self, mask):
+        return llm_embeddings.llm_obs_to_text(self, mask)
+
+    def compute_llmembs_text_to_annotations(self, text):
+        """
+        Computes an LLM embedding for each cell and compares it the embedding of the text and returns the distance
+
+        :param text: the text to embed
+        :return: pandas Series of cell embeddings
+        """
+        return llm_embeddings.llm_text_to_annotations(self, text=text)
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)

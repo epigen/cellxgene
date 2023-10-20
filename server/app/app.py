@@ -167,6 +167,20 @@ class LayoutObsAPI(Resource):
         return common_rest.layout_obs_get(request, data_adaptor)
 
 
+class LLMEmbeddingsObsAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_obs_post(request, data_adaptor)
+
+
+class LLMEmbeddingsTextAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_text_post(request, data_adaptor)
+
+
 class GenesetsAPI(Resource):
     @cache_control(public=True, max_age=ONE_WEEK)
     @rest_get_data_adaptor
@@ -222,6 +236,8 @@ def get_api_dataroot_resources(bp_dataroot):
     # Computation routes
     add_resource(DiffExpObsAPI, "/diffexp/obs")
     add_resource(LayoutObsAPI, "/layout/obs")
+    add_resource(LLMEmbeddingsObsAPI, "/llmembs/obs")
+    add_resource(LLMEmbeddingsTextAPI, "/llmembs/text")
     return api
 
 

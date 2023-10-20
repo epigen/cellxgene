@@ -67,6 +67,9 @@ dataset:
     lfc_cutoff: 0.01
     top_n: 10
 
+  llmembs:
+    enable: true
+
   X_approximate_distribution: auto
 
 external:

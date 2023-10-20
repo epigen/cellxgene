@@ -99,6 +99,13 @@ def config_args(func):
         help="Disable on-demand differential expression.",
     )
     @click.option(
+        "--disable-llmembs",
+        is_flag=True,
+        default=not DEFAULT_CONFIG.dataset_config.llmembs__enable,
+        show_default=False,
+        help="Disable on-demand LLM-Embeddings services.",
+    )
+    @click.option(
         "--embedding",
         "-e",
         default=DEFAULT_CONFIG.dataset_config.embeddings__names,
@@ -324,6 +331,7 @@ def launch(
     disable_gene_sets_save,
     backed,
     disable_diffexp,
+    disable_llmembs,
     config_file,
     dump_default_config,
     x_approximate_distribution,
@@ -385,6 +393,7 @@ def launch(
             embeddings__names=embedding,
             diffexp__enable=not disable_diffexp,
             diffexp__lfc_cutoff=diffexp_lfc_cutoff,
+            llmembs__enable=not disable_llmembs,
             X_approximate_distribution=x_approximate_distribution,
         )
 

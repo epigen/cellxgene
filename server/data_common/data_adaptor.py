@@ -3,6 +3,7 @@ from os.path import basename, splitext
 import numpy as np
 import pandas as pd
 from scipy import sparse
+from server.common.rest import llm_embeddings_obs_post
 from server_timing import Timing as ServerTiming
 
 from server.common.config.app_config import AppConfig
@@ -339,6 +340,14 @@ class DataAdaptor(metaclass=ABCMeta):
     def compute_diffexp_ttest(self, maskA, maskB, top_n, lfc_cutoff):
         pass
 
+    @abstractmethod
+    def compute_llmembs_obs_to_text(self, mask):
+        pass
+
+    @abstractmethod
+    def compute_llmembs_text_to_annotations(self, text):
+        pass
+
     @staticmethod
     def normalize_embedding(embedding):
         """Normalize embedding layout to meet client assumptions.
@@ -421,3 +430,25 @@ class DataAdaptor(metaclass=ABCMeta):
 
         col_idx = pd.Index([query_hash])
         return encode_matrix_fbs(mean, col_idx=col_idx, row_idx=None)
+
+    def llmembs_obs_to_text(self, obsFilter):
+        """
+        Computes the mean expression of each gene in the dataset for the specified observations and runs the
+        embedding LLM to generate a text
+        :param obsFilter: filter: dictionary with filter params for set of observations (cells)
+        :return: top N genes and corresponding stats
+        """
+        if Axis.VAR in obsFilter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obsFilter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        result = self.compute_llmembs_obs_to_text(mask=obs_mask)
+
+        try:
+            return jsonify_strict(result)
+        except ValueError:
+            raise JSONEncodingValueError("Error encoding LLM Embeddings text result to JSON")
