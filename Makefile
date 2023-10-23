@@ -79,6 +79,16 @@ smoke-test:
 smoke-test-annotations:
 	cd client && $(MAKE) smoke-test-annotations
 
+# STARTING SERVER AND FRONTEND
+
+.PHONY: start
+start: start-frontend-noblock start-server
+
+.PHONY: start-frontend-noblock
+start-frontend-noblock:
+	@echo "Starting frontend..."
+	@cd client && nohup make start-frontend &
+
 # FORMATTING CODE
 
 .PHONY: fmt
