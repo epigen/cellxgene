@@ -1,6 +1,6 @@
 {
   "CXG_CLIENT_PORT": 3000,
-  "CXG_OPTIONS": "--debug",
+  "CXG_OPTIONS": "--debug --host 0.0.0.0",
   "CXG_SERVER_PORT": 5005,
   "DATASET": "example-dataset/pbmc3k.h5ad",
   "DEBUG": "debug",
