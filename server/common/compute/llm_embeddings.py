@@ -7,11 +7,12 @@ from scipy import sparse, stats
 import pandas as pd
 import torch
 
-from server.common.constants import XApproximateDistribution
 from single_cellm.jointemb.model import TranscriptomeTextDualEncoderModel, TranscriptomeTextDualEncoderLightning
 from single_cellm.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
 from transformers import AutoTokenizer
 from single_cellm.jointemb.datautils_JointEmbed import JointEmbedDataset
+from single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords import \
+    write_enrichr_terms_to_json, anndata_to_scored_keywords
 
 logger = logging.getLogger(__name__)
 import subprocess
@@ -38,26 +39,55 @@ pl_model.eval().to(device)
 tokenizer = AutoTokenizer.from_pretrained("microsoft/biogpt")
 # image_processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224")
 transcriptome_processor = GeneformerTranscriptomeProcessor(nproc=4, emb_label=parent_config["anndata_label_name"])
+
+logging.info("Preparing EnrichR terms...")
+terms_json_path = Path("~/projects/single-cellm/resources/enrichr_terms/terms.json").expanduser()
+if not terms_json_path.exists():
+    write_enrichr_terms_to_json(terms_json_path=terms_json_path)
+else:
+    logging.info("EnrichR terms already exist - skipping")
+
+logging.info("Preparing done")
+
 logging.info("Loading done")
 # processor = TranscriptomeTextDualEncoderProcessor(transcriptome_processor, tokenizer)
 
 
 def llm_obs_to_text(adaptor, mask):
     """
-    Embed the given cells into the LLM space and return the text representation of the cells.
-
-    Either take the mean of the observations (cells) before going into the shared embedding space. Or, embed all observations and take the mean of the embeddings
-
+    Embed the given cells into the LLM space and return their average similarity to different keywords as formatted text.
+    Keyword types used for comparison are: (i) selected enrichR terms (see single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords.write_enrichr_terms_to_json) \
+    and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords.
     :param adaptor: DataAdaptor instance
+    :param mask: 
     :return:  dictionary  {text: }
     """
 
-    X_approximate_distribution = adaptor.get_X_approximate_distribution()
+    # create anndata object from adaptor
     data = adaptor.get_X_array(mask, None)
+    expression = data.copy()
+    var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"] 
+    expression.var.index = adaptor.data.var[var_index_col_name]
 
-    # TODO call LLM etc.
+    obs_cols = expression.obs.columns # TODO is this the right way to get the obs columns?
 
-    return {"text": "not yet supported"}
+    # get top n keywords by similarity
+    top_n_text = anndata_to_scored_keywords(adata=expression,
+                                       model=pl_model,
+                                       terms_json_path=terms_json_path,
+                                       transcriptome_processor=transcriptome_processor,
+                                       text_tokenizer=tokenizer,
+                                       device=device,
+                                       average_mode="cells", # TODO test which method is better, "cells" or "embeddings"
+                                       chunk_size_text_emb_and_scoring=64,
+                                       n_top_per_term=5,
+                                       obs_cols=["cell type", "cell type rough"],
+                                       score_norm_method="zscore", # TODO test which method is better
+                                       return_mode="text")
+    
+    # TODO Do we need a caching mechanism here?
+    
+    return {"text": top_n_text}
 
 
 def llm_text_to_annotations(adaptor, text):
