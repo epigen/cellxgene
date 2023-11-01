@@ -1,18 +1,17 @@
-from os import popen
 from pathlib import Path
 import logging
 
-import numpy as np
-from scipy import sparse, stats
 import pandas as pd
+from pandas.core.dtypes.dtypes import CategoricalDtype
 import torch
 
-from single_cellm.jointemb.model import TranscriptomeTextDualEncoderModel, TranscriptomeTextDualEncoderLightning
+from single_cellm.jointemb.lightning import TranscriptomeTextDualEncoderLightning
 from single_cellm.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
 from transformers import AutoTokenizer
-from single_cellm.jointemb.datautils_JointEmbed import JointEmbedDataset
-from single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords import \
-    write_enrichr_terms_to_json, anndata_to_scored_keywords
+from single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords import (
+    write_enrichr_terms_to_json,
+    anndata_to_scored_keywords,
+)
 
 logger = logging.getLogger(__name__)
 import subprocess
@@ -64,29 +63,34 @@ def llm_obs_to_text(adaptor, mask):
     """
 
     # create anndata object from adaptor
-    data = adaptor.get_X_array(mask, None)
-    expression = data.copy()
-    var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"] 
-    expression.var.index = adaptor.data.var[var_index_col_name]
+    expression = adaptor.data.copy()
+    # workaround (https://github.com/scverse/scanpy/issues/747#issuecomment-1242183366)
+    var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
+    expression.var.index = adaptor.data.var[var_index_col_name].astype(str)
+    obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
+    expression.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
 
-    obs_cols = expression.obs.columns # TODO is this the right way to get the obs columns?
+    obs_cols = [c for c, t in adaptor.data.obs.dtypes.items() if isinstance(t, CategoricalDtype)]
 
     # get top n keywords by similarity
-    top_n_text = anndata_to_scored_keywords(adata=expression,
-                                       model=pl_model,
-                                       terms_json_path=terms_json_path,
-                                       transcriptome_processor=transcriptome_processor,
-                                       text_tokenizer=tokenizer,
-                                       device=device,
-                                       average_mode="cells", # TODO test which method is better, "cells" or "embeddings"
-                                       chunk_size_text_emb_and_scoring=64,
-                                       n_top_per_term=5,
-                                       obs_cols=["cell type", "cell type rough"],
-                                       score_norm_method="zscore", # TODO test which method is better
-                                       return_mode="text")
-    
-    # TODO Do we need a caching mechanism here?
-    
+    top_n_text = anndata_to_scored_keywords(
+        expression=expression,
+        mask=mask,
+        model=pl_model,
+        terms_json_path=terms_json_path,
+        transcriptome_processor=transcriptome_processor,
+        text_tokenizer=tokenizer,
+        device=device,
+        average_mode="cells",  # TODO test which method is better, "cells" or "embeddings"
+        chunk_size_text_emb_and_scoring=64,
+        n_top_per_term=5,
+        obs_cols=obs_cols,  # Note that this might be confusing to users and we need to see whather this stays shall remain enabled
+        score_norm_method="zscore",  # TODO test which method is better
+        return_mode="text",
+    )
+
+    # TODO Implement a caching mechanism (e.g. could be deployed along with the model)
+
     return {"text": top_n_text}
 
 
