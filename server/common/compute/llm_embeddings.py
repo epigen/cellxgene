@@ -3,6 +3,7 @@ import logging
 
 import pandas as pd
 from pandas.core.dtypes.dtypes import CategoricalDtype
+from single_cellm.jointemb.config import TranscriptomeTextDualEncoderConfig
 import torch
 
 from single_cellm.jointemb.lightning import TranscriptomeTextDualEncoderLightning
@@ -32,7 +33,19 @@ model_path = Path(
 
 # model = TranscriptomeTextDualEncoderModel.from_pretrained(geneformer_biogpt_model_path).to(device)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(model_path)
+
+config_transcriptome = {"model_type": "geneformer"}
+config_text = {"model_type": "biogpt"}
+
+model_config = TranscriptomeTextDualEncoderConfig(
+    projection_dim=512,
+    logit_scale_init_value=2.6592,
+    transcriptome_config=config_transcriptome,
+    text_config=config_text,
+)
+
+
+pl_model = TranscriptomeTextDualEncoderLightning(model_config)  # .load_from_checkpoint(model_path, strict=False)
 pl_model.eval().to(device)
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/biogpt")
@@ -74,9 +87,8 @@ def llm_obs_to_text(adaptor, mask):
 
     # get top n keywords by similarity
     top_n_text = anndata_to_scored_keywords(
-        expression=expression,
-        mask=mask,
-        model=pl_model,
+        expression=expression[mask],
+        model=pl_model.model,
         terms_json_path=terms_json_path,
         transcriptome_processor=transcriptome_processor,
         text_tokenizer=tokenizer,
