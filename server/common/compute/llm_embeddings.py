@@ -9,7 +9,7 @@ import torch
 from single_cellm.jointemb.lightning import TranscriptomeTextDualEncoderLightning
 from single_cellm.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
 from transformers import AutoTokenizer
-from single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords import (
+from single_cellm.validation.zero_shot.functions import (
     write_enrichr_terms_to_json,
     anndata_to_scored_keywords,
 )
@@ -68,8 +68,8 @@ logging.info("Loading done")
 def llm_obs_to_text(adaptor, mask):
     """
     Embed the given cells into the LLM space and return their average similarity to different keywords as formatted text.
-    Keyword types used for comparison are: (i) selected enrichR terms (see single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords.write_enrichr_terms_to_json) \
-    and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see single_cellm.validation.zero_shot.transcriptomes_to_scored_keywords.
+    Keyword types used for comparison are: (i) selected enrichR terms (see single_cellm.validation.zero_shot.functions.write_enrichr_terms_to_json) \
+    and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see single_cellm.validation.zero_shot.functions.
     :param adaptor: DataAdaptor instance
     :param mask: 
     :return:  dictionary  {text: }
