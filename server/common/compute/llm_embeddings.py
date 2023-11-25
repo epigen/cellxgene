@@ -5,6 +5,7 @@ import pandas as pd
 from pandas.core.dtypes.dtypes import CategoricalDtype
 from single_cellm.jointemb.config import TranscriptomeTextDualEncoderConfig
 import torch
+from single_cellm.config import model_path_from_name
 
 from single_cellm.jointemb.lightning import TranscriptomeTextDualEncoderLightning
 from single_cellm.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
@@ -45,7 +46,9 @@ model_config = TranscriptomeTextDualEncoderConfig(
 )
 
 
-pl_model = TranscriptomeTextDualEncoderLightning(model_config)  # .load_from_checkpoint(model_path, strict=False)
+pl_model = TranscriptomeTextDualEncoderLightning(
+    model_config
+)  # .load_from_checkpoint(model_path, "geneformer", "microsoft/biogpt")  # TODO need to load flexibly
 pl_model.eval().to(device)
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/biogpt")
