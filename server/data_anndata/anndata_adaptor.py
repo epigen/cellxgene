@@ -1,3 +1,4 @@
+import logging
 import warnings
 
 import anndata
@@ -7,7 +8,7 @@ from pandas.core.dtypes.dtypes import CategoricalDtype
 from scipy import sparse
 
 import server.common.compute.diffexp_generic as diffexp_generic
-import server.common.compute.llm_embeddings as llm_embeddings
+from server.common.compute.single_cellm_wrapper import SingleCeLLMWrapper
 import server.common.compute.estimate_distribution as estimate_distribution
 from server.common.colors import convert_anndata_category_colors_to_cxg_category_colors
 from server.common.constants import Axis, MAX_LAYOUTS, XApproximateDistribution
@@ -33,6 +34,8 @@ class AnndataAdaptor(DataAdaptor):
         self.X_approximate_distribution = None
         self._load_data(data_locator)
         self._validate_and_initialize()
+        self.single_cellm = SingleCeLLMWrapper()
+        self.single_cellm.preprocess_data(self)
 
     def cleanup(self):
         pass
@@ -335,16 +338,16 @@ class AnndataAdaptor(DataAdaptor):
         return diffexp_generic.diffexp_ttest(self, maskA, maskB, top_n, lfc_cutoff)
 
     def compute_llmembs_obs_to_text(self, mask):
-        return llm_embeddings.llm_obs_to_text(self, mask)
+        return self.single_cellm.llm_obs_to_text(self, mask)
 
     def compute_llmembs_text_to_annotations(self, text):
         """
-        Computes an LLM embedding for each cell and compares it the embedding of the text and returns the distance
+        Computes an LLM embedding for each cell and compares it to the embedding of the text and returns the distance
 
         :param text: the text to embed
         :return: pandas Series of cell embeddings
         """
-        return llm_embeddings.llm_text_to_annotations(self, text=text)
+        return self.single_cellm.llm_text_to_annotations(self, text=text)
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)
