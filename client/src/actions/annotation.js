@@ -51,11 +51,17 @@ export const annotationCreateContinuousAction =
       values
     );
 
+    // TODO this is probably a noop (and should be removed)
     dispatch({
       type: "annotation: create continuous",
       data: newContinuousName,
       annoMatrix: obsCrossfilter.annoMatrix,
       obsCrossfilter,
+    });
+
+    dispatch({
+      type: "color by continuous metadata",
+      colorAccessor: newContinuousName,
     });
   };
 
