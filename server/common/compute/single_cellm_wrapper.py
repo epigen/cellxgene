@@ -27,17 +27,20 @@ logger = logging.getLogger(__name__)
 class SingleCeLLMWrapper:
     def __init__(self):
         logging.info("Loading LLM embedding model...")
-        model_path = Path(
-            "~/single-cellm/results/wandb_logging/JointEmbed_Training/f94cg2nr/checkpoints/epoch=1-val_loss=3.46.ckpt"
+        # The model is the best-performing run from the `second` sweep
+        # TODO should go to /home/moritz/Projects/single-cellm/modules/cellxgene/server/default_config.py and server/common/config respectively
+        self.model_path = Path(
+            "~/single-cellm/results/wandb_logging/JointEmbed_Training/f6fjywkb/checkpoints/last.ckpt"
         ).expanduser()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(model_path)
+        self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(self.model_path)
         self.pl_model.eval().to(self.device)
         self.pl_model.model.prepare_models(
             self.pl_model.model.transcriptome_model, self.pl_model.model.text_model, force_freeze=True
         )
         self.pl_model.freeze()
 
+        # TODO transcriptome_processor_kwargs might be missing
         self.processor = TranscriptomeTextDualEncoderProcessor(
             self.pl_model.model.transcriptome_model.config.model_type,
             model_path_from_name(self.pl_model.model.text_model.config.model_type),
@@ -122,7 +125,7 @@ class SingleCeLLMWrapper:
             text_list_or_text_embeds=[text],
             transcriptome_processor=self.transcriptome_processor,
             text_tokenizer=self.tokenizer,
-            average_mode="embeddings",
+            average_mode=None,
             batch_size=64,
             score_norm_method="zscore",
             transcriptome_annotations=expression.obs.index,
