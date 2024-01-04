@@ -457,18 +457,18 @@ def llm_embeddings_obs_post(request, data_adaptor):
 
     args = request.get_json()
     try:
-        set1_filter = args.get("set1", {"filter": {}})["filter"]
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
 
-        if set1_filter is None:
+        if selection_filter is None:
             return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter set1")
-        if Axis.VAR in set1_filter:
+        if Axis.VAR in selection_filter:
             return abort_and_log(HTTPStatus.BAD_REQUEST, "var axis filter not enabled")
 
     except (KeyError, TypeError) as e:
         return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
 
     try:
-        model_result = data_adaptor.llmembs_obs_to_text(set1_filter)
+        model_result = data_adaptor.llmembs_obs_to_text(selection_filter)
         return make_response(model_result, HTTPStatus.OK, {"Content-Type": "application/json"})
     except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
         return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)

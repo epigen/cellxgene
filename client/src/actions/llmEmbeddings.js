@@ -9,19 +9,21 @@ export const requestEmbeddingLLMWithCells =
   /*
     Send a request to the LLM embedding model with text
   */
-  (set1) => async (dispatch) => {
+  (cellSelection) => async (dispatch) => {
     dispatch({
-      type: "request text to embedding model started",
+      type: "request to embedding model started",
     });
     try {
       // Legal values are null, Array or TypedArray.  Null is initial state.
-      if (!set1) set1 = []; // TODO raise an exception, as we need a selection
+      if (!cellSelection) cellSelection = []; // TODO raise an exception, as we need a selection
 
       // These lines ensure that we convert any TypedArray to an Array.
       // This is necessary because JSON.stringify() does some very strange
       // things with TypedArrays (they are marshalled to JSON objects, rather
       // than being marshalled as a JSON array).
-      set1 = Array.isArray(set1) ? set1 : Array.from(set1);
+      cellSelection = Array.isArray(cellSelection)
+        ? cellSelection
+        : Array.from(cellSelection);
 
       const res = await fetch(
         `${globals.API.prefix}${globals.API.version}llmembs/obs`,
@@ -32,7 +34,7 @@ export const requestEmbeddingLLMWithCells =
             "Content-Type": "application/json",
           }),
           body: JSON.stringify({
-            set1: { filter: { obs: { index: set1 } } },
+            cellSelection: { filter: { obs: { index: cellSelection } } },
           }),
           credentials: "include",
         }

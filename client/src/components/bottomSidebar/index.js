@@ -6,7 +6,7 @@ import * as globals from "../../globals";
 
 @connect((state) => ({
   ...state.llmEmbeddings,
-  differential: state.differential,
+  obsCrossfilter: state.obsCrossfilter,
 }))
 class BottomSideBar extends React.Component {
   constructor(props) {
@@ -26,15 +26,17 @@ class BottomSideBar extends React.Component {
     dispatch(actions.requestEmbeddingLLMWithText(inputText));
   };
 
-  describeSelect1Click = () => {
-    const { dispatch, differential } = this.props;
-    if (differential.celllist1) {
-      dispatch(actions.requestEmbeddingLLMWithCells(differential.celllist1));
+  describeSelectedClick = () => {
+    const { dispatch, obsCrossfilter } = this.props;
+    if (obsCrossfilter.allSelectedLabels()) {
+      dispatch(
+        actions.requestEmbeddingLLMWithCells(obsCrossfilter.allSelectedLabels())
+      );
     }
   };
 
   render() {
-    const { outputText, loading, differential } = this.props;
+    const { outputText, loading, obsCrossfilter } = this.props;
     const { inputText } = this.state;
 
     return (
@@ -70,12 +72,15 @@ class BottomSideBar extends React.Component {
           Find cells
         </Button>
         <Button
-          onClick={this.describeSelect1Click}
-          disabled={!differential.celllist1}
+          onClick={this.describeSelectedClick}
+          disabled={
+            obsCrossfilter.countSelected() === 0 ||
+            obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs
+          }
           loading={loading}
           style={{ margin: "0px 10px", padding: "0px 20px" }}
         >
-          Describe select 1
+          Describe selection
         </Button>
         <div
           style={{
