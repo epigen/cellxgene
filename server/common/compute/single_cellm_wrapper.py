@@ -103,9 +103,19 @@ class SingleCeLLMWrapper:
             score_norm_method="zscore",
         )
 
-        similarity_formatted_text = formatted_text_from_df(similarity_scores_df, n_top_per_term=5)
+        top_5_entries = (
+            similarity_scores_df.query("logits > 0.0")  # drop negatives
+            .groupby("library")
+            .apply(lambda x: x.nlargest(5, "logits"))
+            .reset_index(drop=True)
+        )
+        # Combine the term names with the scores (logits)
+        top_5_entries["labels"] = (
+            top_5_entries["term_without_prefix"] + " (" + top_5_entries["logits"].astype(str) + ")"
+        )
+        structured_text = top_5_entries.groupby("library")["labels"].apply(list).to_dict()
 
-        return {"text": similarity_formatted_text}
+        return {"text": structured_text}
 
     def llm_text_to_annotations(self, adaptor, text) -> pd.Series:
         """

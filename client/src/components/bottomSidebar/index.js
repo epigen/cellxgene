@@ -4,6 +4,16 @@ import { Button, InputGroup } from "@blueprintjs/core";
 import actions from "../../actions";
 import * as globals from "../../globals";
 
+function renderList(items) {
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
 @connect((state) => ({
   ...state.llmEmbeddings,
   obsCrossfilter: state.obsCrossfilter,
@@ -85,12 +95,23 @@ class BottomSideBar extends React.Component {
         <div
           style={{
             border: "1px solid #ccc",
-            margin: "0px 10px",
-            padding: "0px 10px",
+            "max-height": "80px",
+            "overflow-y": "auto",
+            margin: "0px 5px",
+            padding: "0px 5px",
             flex: 1,
           }}
         >
-          {outputText}
+          <ul>
+            {Object.keys(outputText).map((key) => (
+              <li key={key}>
+                <i>{key}</i>
+                {Array.isArray(outputText[key])
+                  ? renderList(outputText[key])
+                  : `: ${outputText[key]}`}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     );
