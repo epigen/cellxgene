@@ -34,7 +34,7 @@ class AnndataAdaptor(DataAdaptor):
         self.X_approximate_distribution = None
         self._load_data(data_locator)
         self._validate_and_initialize()
-        self.single_cellm = SingleCeLLMWrapper()
+        self.single_cellm = SingleCeLLMWrapper(self.dataset_config.llmembs__model_checkpoint)
         self.single_cellm.preprocess_data(self)
 
     def cleanup(self):

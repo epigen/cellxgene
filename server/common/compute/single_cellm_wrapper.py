@@ -25,13 +25,10 @@ logger = logging.getLogger(__name__)
 
 
 class SingleCeLLMWrapper:
-    def __init__(self):
+    def __init__(self, model_path):
         logging.info("Loading LLM embedding model...")
         # The model is the best-performing run from the `second` sweep
-        # TODO should go to /home/moritz/Projects/single-cellm/modules/cellxgene/server/default_config.py and server/common/config respectively
-        self.model_path = Path(
-            "~/single-cellm/results/wandb_logging/JointEmbed_Training/f6fjywkb/checkpoints/last.ckpt"
-        ).expanduser()
+        self.model_path = Path(model_path).expanduser()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(self.model_path)
         self.pl_model.eval().to(self.device)

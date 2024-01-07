@@ -69,6 +69,7 @@ dataset:
 
   llmembs:
     enable: true
+    model_checkpoint: ~/single-cellm/results/wandb_logging/JointEmbed_Training/f6fjywkb/checkpoints/last.ckpt
 
   X_approximate_distribution: auto
 

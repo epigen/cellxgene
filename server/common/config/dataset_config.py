@@ -39,6 +39,7 @@ class DatasetConfig(BaseConfig):
             self.diffexp__top_n = default_config["diffexp"]["top_n"]
 
             self.llmembs__enable = default_config["llmembs"]["enable"]
+            self.llmembs__model_checkpoint = default_config["llmembs"]["model_checkpoint"]
 
             self.X_approximate_distribution = default_config["X_approximate_distribution"]
 
@@ -186,6 +187,7 @@ class DatasetConfig(BaseConfig):
 
     def handle_llmembs(self, context):
         self.validate_correct_type_of_configuration_attribute("llmembs__enable", bool)
+        self.validate_correct_type_of_configuration_attribute("llmembs__model_checkpoint", str)
 
     def handle_X_approximate_distribution(self):
         self.validate_correct_type_of_configuration_attribute("X_approximate_distribution", str)
