@@ -102,16 +102,20 @@ class BottomSideBar extends React.Component {
             flex: 1,
           }}
         >
-          <ul>
-            {Object.keys(outputText).map((key) => (
-              <li key={key}>
-                <i>{key}</i>
-                {Array.isArray(outputText[key])
-                  ? renderList(outputText[key])
-                  : `: ${outputText[key]}`}
-              </li>
-            ))}
-          </ul>
+          {typeof outputText === "string" ? (
+            outputText
+          ) : (
+            <ul>
+              {Object.keys(outputText).map((key) => (
+                <li key={key}>
+                  <i>{key}</i>
+                  {Array.isArray(outputText[key])
+                    ? renderList(outputText[key])
+                    : `: ${outputText[key]}`}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     );
