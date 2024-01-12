@@ -59,6 +59,7 @@ class SingleCeLLMWrapper:
         """
         logging.info("Preprocessing data for LLM embeddings")
 
+        # TODO replace this with loading of full_data.npz
         # Make sure that all the zero-shot class terms are embedded
         mask = np.zeros(adaptor.data.shape[0], dtype=bool)
         mask[0] = True  # Generate mask with single element
@@ -80,10 +81,13 @@ class SingleCeLLMWrapper:
         :return:  dictionary  {text: }
         """
 
-        expression = adaptor.data.copy()
         var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
-        expression.var.index = adaptor.data.var[var_index_col_name].astype(str)
         obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
+
+        # TODO try to load embeddings via npz
+
+        expression = adaptor.data.copy()
+        expression.var.index = adaptor.data.var[var_index_col_name].astype(str)
         expression.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
 
         obs_cols = [c for c, t in adaptor.data.obs.dtypes.items() if isinstance(t, CategoricalDtype)]
@@ -118,15 +122,19 @@ class SingleCeLLMWrapper:
         """
         Embed the given text into the LLM space and return the similarity of each cell to the text. The similarity will be used as new cell-level annotation
         """
-        expression = adaptor.data.copy()
-        var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
-        expression.var.index = adaptor.data.var[var_index_col_name]
+
         # Converts an obs index of "0", "1", ... to "TTTGCATGAGAGGC-1", ...
         obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
+        var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
+
+        # TODO try to load embeddings via npz
+
+        expression = adaptor.data.copy()
+        expression.var.index = adaptor.data.var[var_index_col_name]
         expression.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
 
         # TODO similarities is [nan, ...]
-        similarities, unnormalized_similarities = score_text_vs_transcriptome_many_vs_many(
+        scores, transcriptome_annotations = score_text_vs_transcriptome_many_vs_many(
             model=self.pl_model.model,
             transcriptome_input=expression,
             text_list_or_text_embeds=[text],
@@ -134,8 +142,8 @@ class SingleCeLLMWrapper:
             text_tokenizer=self.tokenizer,
             average_mode=None,
             batch_size=64,
-            score_norm_method="zscore",
+            score_norm_method=None,
             transcriptome_annotations=expression.obs.index,
         )
 
-        return pd.Series(unnormalized_similarities.squeeze(0).cpu().detach())
+        return pd.Series(scores.squeeze(0).cpu().detach())
