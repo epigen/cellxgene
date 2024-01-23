@@ -28,6 +28,8 @@ class SingleCeLLMWrapper:
     def __init__(self, model_path):
         logging.info("Loading LLM embedding model...")
         # The model is the best-performing run from the `second` sweep
+
+        # TODO load model with function from src/single_cellm/utils/model_io.py
         self.model_path = Path(model_path).expanduser()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(self.model_path)
@@ -59,7 +61,7 @@ class SingleCeLLMWrapper:
         """
         logging.info("Preprocessing data for LLM embeddings")
         model_processed_data_path = get_path(
-            ["paths", "model_processed_dataset"], dataset="tabula_sapiens", model="f6fjywkb"
+            ["paths", "model_processed_dataset"], dataset="tabula_sapiens", model=model_path_from_name("single_cellm")
         )  # TODO pass these two values dynamically
         if model_processed_data_path.exists():
             logging.info("Loading precomputed data")
