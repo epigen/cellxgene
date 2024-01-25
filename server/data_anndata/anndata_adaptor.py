@@ -35,7 +35,8 @@ class AnndataAdaptor(DataAdaptor):
         self._load_data(data_locator)
         self._validate_and_initialize()
         self.single_cellm = SingleCeLLMWrapper(self.dataset_config.llmembs__model_checkpoint)
-        self.single_cellm.preprocess_data(self)
+
+        self.single_cellm.preprocess_data(self, self.server_config.single_dataset__datapath)
 
     def cleanup(self):
         pass

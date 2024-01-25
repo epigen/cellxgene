@@ -1,6 +1,7 @@
 from pathlib import Path
 import logging
 
+import re
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.dtypes import CategoricalDtype
@@ -55,14 +56,34 @@ class SingleCeLLMWrapper:
 
         logging.info("Loading done")
 
-    def preprocess_data(self, adaptor):
+    def preprocess_data(self, adaptor, dataset_path):
         """
         Preprocess data for LLM embeddings, making sure that subsequent API requests run fast
+
+        adaptor: Access to the adata object
+        dataset_path: Just to extract the dataset_name (might be better to directly pass the dataset_name)
         """
         logging.info("Preprocessing data for LLM embeddings")
-        model_processed_data_path = get_path(
-            ["paths", "model_processed_dataset"], dataset="tabula_sapiens", model=model_path_from_name("single_cellm")
-        )  # TODO pass these two values dynamically
+
+        try:
+            model_id = adaptor.data.uns["model"]
+        except KeyError:
+            model_id = Path(self.model_path).stem
+            # check that model_id is alphanumerical
+            if len(model_id) != 8 or not model_id.isalnum():
+                logging.warning(f"Model id {model_id} does not seem to be valid. Aborting preprocessing.")
+                return
+
+        try:
+            dataset = adaptor.data.uns["dataset"]
+        except KeyError:
+            try:
+                dataset = re.search(r"results/([^/]+)/.+\.h5ad", dataset_path).group(1)
+            except AttributeError:
+                logging.warning(f"Could not infer dataset name from path {dataset_path}. Aborting preprocessing.")
+                return
+
+        model_processed_data_path = get_path(["paths", "model_processed_dataset"], dataset=dataset, model=model_id)
         if model_processed_data_path.exists():
             logging.info("Loading precomputed data")
             self.model_processed_data = np.load(model_processed_data_path, allow_pickle=True)
@@ -99,16 +120,22 @@ class SingleCeLLMWrapper:
             selector = [str(orig_id) in selected_obs_ids for orig_id in self.model_processed_data["orig_ids"]]
             transcriptomes = torch.from_numpy(self.model_processed_data["transcriptome_embeds"][selector])
             transcriptomes = transcriptomes.to(self.pl_model.model.device)
+
+            if sum(selector) != len(selected_obs_ids):
+                logging.warning(
+                    f"Precomputed embeddings seem to lack entries: {sum(selector)} of {len(selected_obs_ids)} found"
+                )
         else:
             # Provide raw read counts, which will be processed by the model
             transcriptomes = adaptor.data[mask].copy()
             transcriptomes.var.index = adaptor.data.var[var_index_col_name].astype(str)
-            transcriptomes.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
+            transcriptomes.obs.index = adaptor.data.obs.loc[mask, obs_index_col_name].astype(str)
 
-        obs_cols = [c for c, t in adaptor.data.obs.dtypes.items() if isinstance(t, CategoricalDtype)]
-        additional_text_dict = {
-            obs_col: adaptor.data.obs[obs_col].astype(str).unique().tolist() for obs_col in obs_cols
-        }
+        # Get all categorical columns (too extensive and doesn't make sense)
+        # obs_cols = [c for c, t in adaptor.data.obs.dtypes.items() if isinstance(t, CategoricalDtype)]
+        # additional_text_dict = {
+        #     obs_col: adaptor.data.obs[obs_col].astype(str).unique().tolist() for obs_col in obs_cols
+        # }
 
         similarity_scores_df = anndata_to_scored_keywords(
             transcriptome_input=transcriptomes,
@@ -118,7 +145,6 @@ class SingleCeLLMWrapper:
             text_tokenizer=self.tokenizer,
             average_mode="embeddings",
             batch_size=64,
-            additional_text_dict=additional_text_dict,
             score_norm_method="zscore",
         )
 
