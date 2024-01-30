@@ -6,7 +6,6 @@ import Container from "./framework/container";
 import Layout from "./framework/layout";
 import LeftSideBar from "./leftSidebar";
 import RightSideBar from "./rightSidebar";
-import BottomSideBar from "./bottomSidebar";
 import Legend from "./continuousLegend";
 import Graph from "./graph/graph";
 import MenuBar from "./menubar";
@@ -80,7 +79,6 @@ class App extends React.Component {
               </>
             )}
             <RightSideBar />
-            <BottomSideBar />
           </Layout>
         )}
       </Container>

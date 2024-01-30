@@ -8,7 +8,7 @@ import actions from "../../actions";
 import Clip from "./clip";
 
 import Subset from "./subset";
-import UndoRedoReset from "./undoRedo";
+// import UndoRedoReset from "./undoRedo";
 import DiffexpButtons from "./diffexpButtons";
 import { getEmbSubsetView } from "../../util/stateManager/viewStackHelpers";
 
@@ -195,8 +195,8 @@ class MenuBar extends React.PureComponent {
     const {
       dispatch,
       disableDiffexp,
-      undoDisabled,
-      redoDisabled,
+      // undoDisabled,
+      // redoDisabled,
       selectionTool,
       clipPercentileMin,
       clipPercentileMax,
@@ -231,11 +231,11 @@ class MenuBar extends React.PureComponent {
           zIndex: 3,
         }}
       >
-        <UndoRedoReset
-          dispatch={dispatch}
-          undoDisabled={undoDisabled}
-          redoDisabled={redoDisabled}
-        />
+        {/* <UndoRedoReset */}
+        {/*   dispatch={dispatch} */}
+        {/*   undoDisabled={undoDisabled} */}
+        {/*   redoDisabled={redoDisabled} */}
+        {/* /> */}
         <Clip
           pendingClipPercentiles={pendingClipPercentiles}
           clipPercentileMin={clipPercentileMin}

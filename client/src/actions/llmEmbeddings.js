@@ -54,7 +54,7 @@ export const requestEmbeddingLLMWithCells =
       const response = await res.json();
       return dispatch({
         type: "embedding model text response from cells",
-        data: response.text,
+        data: response,
       });
     } catch (error) {
       return dispatch({

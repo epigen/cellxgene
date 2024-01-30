@@ -56,9 +56,12 @@ class SingleCeLLMWrapper:
 
         logging.info("Loading done")
 
+        self.model_processed_data = None
+
     def preprocess_data(self, adaptor, dataset_path):
         """
         Preprocess data for LLM embeddings, making sure that subsequent API requests run fast
+        TODO: simply add the transcriptome_embeds to the adata object (as a layer or obsm or so). then the `dataset_path` is not necessary anymore and we can call this from the constructor right away
 
         adaptor: Access to the adata object
         dataset_path: Just to extract the dataset_name (might be better to directly pass the dataset_name)
@@ -72,7 +75,7 @@ class SingleCeLLMWrapper:
             # check that model_id is alphanumerical
             if len(model_id) != 8 or not model_id.isalnum():
                 logging.warning(f"Model id {model_id} does not seem to be valid. Aborting preprocessing.")
-                return
+                model_id = None
 
         try:
             dataset = adaptor.data.uns["dataset"]
@@ -81,7 +84,7 @@ class SingleCeLLMWrapper:
                 dataset = re.search(r"results/([^/]+)/.+\.h5ad", dataset_path).group(1)
             except AttributeError:
                 logging.warning(f"Could not infer dataset name from path {dataset_path}. Aborting preprocessing.")
-                return
+                dataset = None
 
         model_processed_data_path = get_path(["paths", "model_processed_dataset"], dataset=dataset, model=model_id)
         if model_processed_data_path.exists():
@@ -154,13 +157,35 @@ class SingleCeLLMWrapper:
             .apply(lambda x: x.nlargest(5, "logits"))
             .reset_index(drop=True)
         )
+
         # Combine the term names with the scores (logits)
         top_5_entries["labels"] = (
             top_5_entries["term_without_prefix"] + " (" + top_5_entries["logits"].astype(str) + ")"
         )
-        structured_text = top_5_entries.groupby("library")["labels"].apply(list).to_dict()
 
-        return {"text": structured_text}
+        # Combine the term names with the scores (logits)
+        top_5_entries["labels"] = (
+            top_5_entries["term_without_prefix"] + " (" + top_5_entries["logits"].astype(str) + ")"
+        )
+
+        # Group by 'library' and create a list of 'labels'
+        grouped = top_5_entries.groupby("library")
+
+        # Find the maximum logits value for each group
+        max_logits_per_group = grouped["logits"].max()
+
+        # Sort the groups by the maximum logits value in descending order
+        sorted_groups = max_logits_per_group.sort_values(ascending=False)
+
+        # Generate the final object to return, sorted by strongest hits on the library-level
+        structured_text = [
+            {
+                "library": library,
+                "keywords": grouped.get_group(library)["labels"].tolist(),
+            }
+            for library in sorted_groups.index
+        ]
+        return structured_text
 
     def llm_text_to_annotations(self, adaptor, text) -> pd.Series:
         """

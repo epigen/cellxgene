@@ -1,6 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import GeneExpression from "../geneExpression";
+import ChatSideBar from "../chatSidebar";
 import * as globals from "../../globals";
 
 @connect((state) => ({
@@ -25,6 +26,7 @@ class RightSidebar extends React.Component {
         }}
       >
         <GeneExpression />
+        <ChatSideBar />
       </div>
     );
   }
