@@ -97,7 +97,7 @@ class ChatSideBar extends React.Component {
             value={inputText}
             fill
             onChange={this.handleInputChange}
-            placeholder="Sample of lung cancer cells from an old patient"
+            placeholder="Structural cells with immune function"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 this.findCellsClick();
