@@ -167,10 +167,13 @@ class SingleCeLLMWrapper:
             transcriptomes.var.index = adaptor.data.var[var_index_col_name]
             transcriptomes.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
 
+        texts = text.split("MINUS")
+        assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
+
         scores, _ = score_text_vs_transcriptome_many_vs_many(
             model=self.pl_model.model,
             transcriptome_input=transcriptomes,
-            text_list_or_text_embeds=[text],
+            text_list_or_text_embeds=texts,
             transcriptome_processor=self.transcriptome_processor,
             text_tokenizer=self.tokenizer,
             average_mode=None,
@@ -178,5 +181,9 @@ class SingleCeLLMWrapper:
             score_norm_method=None,
             transcriptome_annotations=adaptor.data.obs[obs_index_col_name].astype(str).values,
         )
+        if len(texts) == 2:
+            scores = scores[0] - scores[1]
+        else:
+            scores = scores[0]
 
-        return pd.Series(scores.squeeze(0).cpu().detach())
+        return pd.Series(scores.cpu().detach())
