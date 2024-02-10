@@ -229,6 +229,7 @@ def launch_args(func):
     @dataset_args
     @server_args
     @click.argument("datapath", required=False, metavar="<path to data file>")
+    @click.argument("modelpath", required=False, metavar="<path to model checkpoint>")
     @click.option(
         "--open",
         "-o",
@@ -310,6 +311,7 @@ class CliLaunchServer(Server):
 @launch_args
 def launch(
     datapath,
+    modelpath,
     verbose,
     debug,
     open_browser,
@@ -394,6 +396,7 @@ def launch(
             diffexp__enable=not disable_diffexp,
             diffexp__lfc_cutoff=diffexp_lfc_cutoff,
             llmembs__enable=not disable_llmembs,
+            llmembs__model_checkpoint=modelpath,
             X_approximate_distribution=x_approximate_distribution,
         )
 
