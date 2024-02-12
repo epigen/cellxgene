@@ -36,6 +36,8 @@ class AnndataAdaptor(DataAdaptor):
         self._validate_and_initialize()
         self.single_cellm = SingleCeLLMWrapper(self.dataset_config.llmembs__model_checkpoint)
 
+        self.single_cellm.preprocess_data(self)  # required to cache all the keywords
+
     def cleanup(self):
         pass
 

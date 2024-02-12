@@ -51,25 +51,25 @@ class SingleCeLLMWrapper:
 
         logging.info("Loading done")
 
-    def _preprocess_data(self, adaptor):
+    def preprocess_data(self, adaptor):
         """
-        Preprocess data for LLM embeddings, making sure that subsequent API requests run fast
+        Preprocess data for LLM embeddings, making sure that subsequent API requests run fast.
+        If things are cached already (through frozenmodel and/or the adaptor) this will be fast
 
         adaptor: Access to the adata object
         """
-        if "transcriptome_embeds" not in adaptor.data.obsm:
-            logging.info("Preprocessing data for LLM embeddings")
+        logging.info("Preprocessing data for LLM embeddings, making sure it's fast")
 
-            # Make sure that all the zero-shot class terms are embedded
-            mask = np.zeros(adaptor.data.shape[0], dtype=bool)
-            mask[0] = True  # Generate mask with single element
-            self.llm_obs_to_text(adaptor, mask=mask)
+        # Make sure that all the zero-shot class terms are embedded
+        mask = np.zeros(adaptor.data.shape[0], dtype=bool)
+        mask[0] = True  # Generate mask with single element
+        self.llm_obs_to_text(adaptor, mask=mask)
 
-            # Embed all cells
-            self.llm_text_to_annotations(adaptor, text="test")
+        # Embed all cells
+        self.llm_text_to_annotations(adaptor, text="test")
 
-            # Store
-            self.pl_model.model.store_cache()
+        # Store
+        self.pl_model.model.store_cache()
 
     def llm_obs_to_text(self, adaptor, mask):
         """
