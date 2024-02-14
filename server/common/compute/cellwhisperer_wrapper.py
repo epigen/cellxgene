@@ -4,23 +4,24 @@ import logging
 import re
 import pandas as pd
 import numpy as np
-from pandas.core.dtypes.dtypes import CategoricalDtype
-from cellwhisperer.utils.inference import score_transcriptomes_vs_texts
-from cellwhisperer.jointemb.config import TranscriptomeTextDualEncoderConfig
+
+import requests
+import pickle
+import torch
+
 from cellwhisperer.jointemb.processing import TranscriptomeTextDualEncoderProcessor
+from cellwhisperer.utils.inference import score_transcriptomes_vs_texts
+from cellwhisperer.jointemb.single_cellm_lightning import TranscriptomeTextDualEncoderLightning
 import torch
 from cellwhisperer.config import get_path, model_path_from_name
 
-from cellwhisperer.jointemb.cellwhisperer_lightning import TranscriptomeTextDualEncoderLightning
-from cellwhisperer.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
-from transformers import AutoTokenizer
 from cellwhisperer.validation.zero_shot.functions import (
     anndata_to_scored_keywords,
     formatted_text_from_df,
 )
 
-import subprocess
-import yaml
+# TODO needs to be passed via the CXG config
+API_URL = "http://cellwhisperer_api:5000/api/score_text_vs_transcriptome_many_vs_many"
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +163,7 @@ class CellWhispererWrapper:
             transcriptomes = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"])
             transcriptomes = transcriptomes.to(self.pl_model.model.device)
         else:
+            raise NotImplementedError
             # Provide raw read counts, which will be processed by the model
             transcriptomes = adaptor.data.to_memory(copy=True)  # NOTE copy is slow!
             transcriptomes.var.index = adaptor.data.var[var_index_col_name]
@@ -170,17 +172,35 @@ class CellWhispererWrapper:
         texts = text.split("MINUS")
         assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
 
-        scores, _ = score_transcriptomes_vs_texts(
-            model=self.pl_model.model,
-            transcriptome_input=transcriptomes,
-            text_list_or_text_embeds=texts,
-            transcriptome_processor=self.transcriptome_processor,
-            text_tokenizer=self.tokenizer,
-            average_mode=None,
-            batch_size=64,
-            score_norm_method=None,
-            grouping_keys=adaptor.data.obs[obs_index_col_name].astype(str).values,
+        # Serialize your input data
+        data = pickle.dumps(
+            (transcriptomes, texts, None, adaptor.data.obs[obs_index_col_name].astype(str).values, None)
         )
+
+        # Send the POST request with the serialized data
+        response = requests.post(API_URL, data=data)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Deserialize the response data
+            scores = pickle.loads(response.content)
+            logging.warning(scores)
+        else:
+            logging.warning(f"Request failed with status code {response.status_code}")
+            # TODO return a 500 server error
+
+            scores, _ = score_transcriptomes_vs_texts(
+                model=self.pl_model.model,
+                transcriptome_input=transcriptomes,
+                text_list_or_text_embeds=texts,
+                transcriptome_processor=self.transcriptome_processor,
+                text_tokenizer=self.tokenizer,
+                average_mode=None,
+                batch_size=64,
+                score_norm_method=None,
+                grouping_keys=adaptor.data.obs[obs_index_col_name].astype(str).values,
+            )
+
         if len(texts) == 2:
             scores = scores[0] - scores[1]
         else:
