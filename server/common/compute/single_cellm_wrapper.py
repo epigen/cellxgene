@@ -5,15 +5,15 @@ import re
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.dtypes import CategoricalDtype
-from single_cellm.jointemb.config import TranscriptomeTextDualEncoderConfig
-from single_cellm.jointemb.processing import TranscriptomeTextDualEncoderProcessor
+from cellwhisperer.jointemb.config import TranscriptomeTextDualEncoderConfig
+from cellwhisperer.jointemb.processing import TranscriptomeTextDualEncoderProcessor
 import torch
-from single_cellm.config import get_path, model_path_from_name
+from cellwhisperer.config import get_path, model_path_from_name
 
-from single_cellm.jointemb.single_cellm_lightning import TranscriptomeTextDualEncoderLightning
-from single_cellm.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
+from cellwhisperer.jointemb.cellwhisperer_lightning import TranscriptomeTextDualEncoderLightning
+from cellwhisperer.jointemb.geneformer_model import GeneformerTranscriptomeProcessor
 from transformers import AutoTokenizer
-from single_cellm.validation.zero_shot.functions import (
+from cellwhisperer.validation.zero_shot.functions import (
     anndata_to_scored_keywords,
     formatted_text_from_df,
     score_text_vs_transcriptome_many_vs_many,
@@ -25,12 +25,12 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-class SingleCeLLMWrapper:
+class CellWhispererWrapper:
     def __init__(self, model_path):
         logging.info("Loading LLM embedding model...")
         # The model is the best-performing run from the `second` sweep
 
-        # TODO load model with function from src/single_cellm/utils/model_io.py
+        # TODO load model with function from src/cellwhisperer/utils/model_io.py
         self.model_path = Path(model_path).expanduser()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(self.model_path)
@@ -74,8 +74,8 @@ class SingleCeLLMWrapper:
     def llm_obs_to_text(self, adaptor, mask):
         """
         Embed the given cells into the LLM space and return their average similarity to different keywords as formatted text.
-        Keyword types used for comparison are: (i) selected enrichR terms (see single_cellm.validation.zero_shot.functions.write_enrichr_terms_to_json) \
-        and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see single_cellm.validation.zero_shot.functions.
+        Keyword types used for comparison are: (i) selected enrichR terms (see cellwhisperer.validation.zero_shot.functions.write_enrichr_terms_to_json) \
+        and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see cellwhisperer.validation.zero_shot.functions.
         :param adaptor: DataAdaptor instance
         :param mask:
         :return:  dictionary  {text: }

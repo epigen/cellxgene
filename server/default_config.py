@@ -69,7 +69,7 @@ dataset:
 
   llmembs:
     enable: true
-    model_checkpoint: ~/single-cellm/results/models/jointemb/03jujd8s.ckpt
+    model_checkpoint: ~/cellwhisperer/results/models/jointemb/03jujd8s.ckpt
   X_approximate_distribution: auto
 
 external:
