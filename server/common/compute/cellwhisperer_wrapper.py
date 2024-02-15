@@ -5,6 +5,7 @@ import re
 import pandas as pd
 import numpy as np
 from pandas.core.dtypes.dtypes import CategoricalDtype
+from cellwhisperer.utils.inference import score_transcriptomes_vs_texts
 from cellwhisperer.jointemb.config import TranscriptomeTextDualEncoderConfig
 from cellwhisperer.jointemb.processing import TranscriptomeTextDualEncoderProcessor
 import torch
@@ -16,7 +17,6 @@ from transformers import AutoTokenizer
 from cellwhisperer.validation.zero_shot.functions import (
     anndata_to_scored_keywords,
     formatted_text_from_df,
-    score_text_vs_transcriptome_many_vs_many,
 )
 
 import subprocess
@@ -170,7 +170,7 @@ class CellWhispererWrapper:
         texts = text.split("MINUS")
         assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
 
-        scores, _ = score_text_vs_transcriptome_many_vs_many(
+        scores, _ = score_transcriptomes_vs_texts(
             model=self.pl_model.model,
             transcriptome_input=transcriptomes,
             text_list_or_text_embeds=texts,
@@ -179,7 +179,7 @@ class CellWhispererWrapper:
             average_mode=None,
             batch_size=64,
             score_norm_method=None,
-            transcriptome_annotations=adaptor.data.obs[obs_index_col_name].astype(str).values,
+            grouping_keys=adaptor.data.obs[obs_index_col_name].astype(str).values,
         )
         if len(texts) == 2:
             scores = scores[0] - scores[1]
