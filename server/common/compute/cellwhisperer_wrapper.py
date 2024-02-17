@@ -1,20 +1,16 @@
-from pathlib import Path
 import logging
 
-import re
 import os
 import pandas as pd
 import numpy as np
+from typing import List
 
 import requests
 import pickle
 import torch
 
-from cellwhisperer.jointemb.processing import TranscriptomeTextDualEncoderProcessor
 from cellwhisperer.utils.inference import score_transcriptomes_vs_texts, rank_terms_by_score, prepare_terms
-from cellwhisperer.jointemb.single_cellm_lightning import TranscriptomeTextDualEncoderLightning
 import torch
-from cellwhisperer.config import get_path, model_path_from_name
 from cellwhisperer.utils.model_io import load_cellwhisperer_model
 
 
@@ -32,9 +28,13 @@ class CellWhispererWrapper:
                 model_path_or_url, cache=True
             )
             logging.info("Loading done")
+            self.logit_scale = self.pl_model.model.discriminator.temperature.exp()
         else:
             self.pl_model = None
             self.api_url = model_path_or_url
+            # load logit_scale via API
+            response = requests.get(self.api_url + "/logit_scale")
+            self.logit_scale = float(response.content)
 
     def preprocess_data(self, adaptor):
         """
@@ -69,7 +69,7 @@ class CellWhispererWrapper:
         obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
 
         if "transcriptome_embeds" in adaptor.data.obsm:
-            transcriptomes = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"][mask])
+            transcriptome_embeds = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"][mask])
             # transcriptomes = transcriptomes.to(self.pl_model.model.device)
         else:
             # Provide raw read counts, which will be processed by the model
@@ -80,6 +80,7 @@ class CellWhispererWrapper:
 
             transcriptomes.var.index = adaptor.data.var[var_index_col_name].astype(str)
             transcriptomes.obs.index = adaptor.data.obs.loc[mask, obs_index_col_name].astype(str)
+            transcriptome_embeds = self.pl_model.embed_transcriptomes(transcriptomes)
 
         # Get all categorical columns (too extensive and doesn't make sense)
         # obs_cols = [c for c, t in adaptor.data.obs.dtypes.items() if isinstance(t, CategoricalDtype)]
@@ -89,32 +90,15 @@ class CellWhispererWrapper:
         terms = adaptor.data.uns["terms"]
 
         terms_df = prepare_terms(terms)  # additional_text_dict
+        text_embeds = self._embed_texts(terms_df["term"].to_list())
 
-        if self.pl_model is None:
-            # Call the model via API
-            data = pickle.dumps((transcriptomes, terms_df["term"].to_list(), "embeddings", None, "zscore"))
-
-            # Send the POST request with the serialized data
-            response = requests.post(self.api_url + "/score_transcriptomes_vs_texts", data=data)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                # Deserialize the response data
-                scores = pickle.loads(response.content)
-            else:
-                logging.warning(f"Request failed with status code {response.status_code} and error {response.content}")
-                raise RuntimeError(f"Request to model API failed: {response.status_code}")
-
-        else:
-            scores, _ = score_transcriptomes_vs_texts(
-                model=self.pl_model.model,
-                transcriptome_input=transcriptomes,
-                text_list_or_text_embeds=terms_df["term"].to_list(),
-                average_mode="embeddings",
-                text_tokenizer=self.tokenizer,
-                transcriptome_processor=self.transcriptome_processor,
-                score_norm_method="zscore",
-            )  # n_text * 1
+        scores, _ = score_transcriptomes_vs_texts(
+            transcriptome_input=transcriptome_embeds,
+            text_list_or_text_embeds=text_embeds,
+            logit_scale=self.logit_scale,
+            average_mode="embeddings",
+            score_norm_method="zscore",
+        )  # n_text * 1
 
         similarity_scores_df = rank_terms_by_score(scores, terms_df)
 
@@ -159,7 +143,7 @@ class CellWhispererWrapper:
         var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
 
         if "transcriptome_embeds" in adaptor.data.obsm:
-            transcriptomes = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"])
+            transcriptome_embeds = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"])
             # transcriptomes = transcriptomes.to(self.pl_model.model.device)
         else:
             assert self.pl_model is not None, "Model is not loaded, so embeddings need to be preprocessed in advance"
@@ -167,42 +151,44 @@ class CellWhispererWrapper:
             transcriptomes = adaptor.data.to_memory(copy=True)  # NOTE copy is slow!
             transcriptomes.var.index = adaptor.data.var[var_index_col_name]
             transcriptomes.obs.index = adaptor.data.obs[obs_index_col_name].astype(str)
+            transcriptome_embeds = self.pl_model.embed_transcriptomes(transcriptomes)
 
         texts = text.split("MINUS")
         assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
+        text_embeds = self._embed_texts(texts)
 
-        if self.pl_model is None:
-            # Serialize your input data
-            data = pickle.dumps(
-                (transcriptomes, texts, None, adaptor.data.obs[obs_index_col_name].astype(str).values, None)
-            )
+        scores, _ = score_transcriptomes_vs_texts(
+            transcriptome_input=transcriptome_embeds,
+            text_list_or_text_embeds=text_embeds,
+            logit_scale=self.logit_scale,
+            average_mode=None,
+            batch_size=64,
+            score_norm_method=None,
+            grouping_keys=adaptor.data.obs[obs_index_col_name].astype(str).values,
+        )
 
-            # Send the POST request with the serialized data
-            response = requests.post(self.api_url + "/score_transcriptomes_vs_texts", data=data)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                # Deserialize the response data
-                scores = pickle.loads(response.content)
-            else:
-                logging.warning(f"Request failed with status code {response.status_code}, {response.content}")
-                raise RuntimeError(f"Request to model API failed: {response.status_code}")
-        else:
-            scores, _ = score_transcriptomes_vs_texts(
-                model=self.pl_model.model,
-                transcriptome_input=transcriptomes,
-                text_list_or_text_embeds=texts,
-                transcriptome_processor=self.transcriptome_processor,
-                text_tokenizer=self.tokenizer,
-                average_mode=None,
-                batch_size=64,
-                score_norm_method=None,
-                grouping_keys=adaptor.data.obs[obs_index_col_name].astype(str).values,
-            )
-
-        if len(texts) == 2:
+        if len(text_embeds) == 2:
             scores = scores[0] - scores[1]
         else:
             scores = scores[0]
 
         return pd.Series(scores.cpu().detach())
+
+    def _embed_texts(self, texts: List[str]):
+        if self.pl_model is None:
+            # Serialize your input data
+            # Send the POST request with the json-list of texts
+            response = requests.post(self.api_url + "/text_embedding", json=texts)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Deserialize the response data
+                text_embeds = torch.from_numpy(pickle.loads(response.content))
+            else:
+                logging.warning(f"Request failed with status code {response.status_code}, {response.content}")
+                raise RuntimeError(f"Request to model API failed: {response.status_code}")
+        else:
+            assert self.pl_model is not None, "Model is not loaded, but querying API for text embedding failed as well"
+            text_embeds = self.pl_model.embed_text(texts)
+
+        return text_embeds
