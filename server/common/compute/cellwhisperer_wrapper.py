@@ -2,6 +2,7 @@ from pathlib import Path
 import logging
 
 import re
+import os
 import pandas as pd
 import numpy as np
 
@@ -10,47 +11,30 @@ import pickle
 import torch
 
 from cellwhisperer.jointemb.processing import TranscriptomeTextDualEncoderProcessor
-from cellwhisperer.utils.inference import score_transcriptomes_vs_texts
+from cellwhisperer.utils.inference import score_transcriptomes_vs_texts, rank_terms_by_score, prepare_terms
 from cellwhisperer.jointemb.single_cellm_lightning import TranscriptomeTextDualEncoderLightning
 import torch
 from cellwhisperer.config import get_path, model_path_from_name
+from cellwhisperer.utils.model_io import load_cellwhisperer_model
 
-from cellwhisperer.validation.zero_shot.functions import (
-    anndata_to_scored_keywords,
-    formatted_text_from_df,
-)
-
-# TODO needs to be passed via the CXG config
-API_URL = "http://cellwhisperer_api:5000/api/score_text_vs_transcriptome_many_vs_many"
 
 logger = logging.getLogger(__name__)
 
 
 class CellWhispererWrapper:
-    def __init__(self, model_path):
-        logging.info("Loading LLM embedding model...")
-        # The model is the best-performing run from the `second` sweep
-
-        # TODO load model with function from src/cellwhisperer/utils/model_io.py
-        self.model_path = Path(model_path).expanduser()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.pl_model = TranscriptomeTextDualEncoderLightning.load_from_checkpoint(self.model_path)
-        self.pl_model.eval().to(self.device)
-        self.pl_model.model.prepare_models(
-            self.pl_model.model.transcriptome_model, self.pl_model.model.text_model, force_freeze=True
-        )
-        self.pl_model.freeze()
-
-        # TODO transcriptome_processor_kwargs might be missing
-        self.processor = TranscriptomeTextDualEncoderProcessor(
-            self.pl_model.model.transcriptome_model.config.model_type,
-            model_path_from_name(self.pl_model.model.text_model.config.model_type),
-        )
-
-        self.tokenizer = self.processor.tokenizer
-        self.transcriptome_processor = self.processor.transcriptome_processor
-
-        logging.info("Loading done")
+    def __init__(self, model_path_or_url: str):
+        """
+        Load the model from the given path or use it via the given URL
+        """
+        if os.path.exists(model_path_or_url):
+            logging.info("Loading LLM embedding model...")
+            self.pl_model, self.tokenizer, self.transcriptome_processor = load_cellwhisperer_model(
+                model_path_or_url, cache=True
+            )
+            logging.info("Loading done")
+        else:
+            self.pl_model = None
+            self.api_url = model_path_or_url
 
     def preprocess_data(self, adaptor):
         """
@@ -60,6 +44,7 @@ class CellWhispererWrapper:
         adaptor: Access to the adata object
         """
         logging.info("Preprocessing data for LLM embeddings, making sure it's fast")
+        return  # just for testing
 
         # Make sure that all the zero-shot class terms are embedded
         mask = np.zeros(adaptor.data.shape[0], dtype=bool)
@@ -69,8 +54,7 @@ class CellWhispererWrapper:
         # Embed all cells
         self.llm_text_to_annotations(adaptor, text="test")
 
-        # Store
-        self.pl_model.model.store_cache()
+        response = requests.post(self.api_url + "/store_cache")
 
     def llm_obs_to_text(self, adaptor, mask):
         """
@@ -86,7 +70,7 @@ class CellWhispererWrapper:
 
         if "transcriptome_embeds" in adaptor.data.obsm:
             transcriptomes = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"][mask])
-            transcriptomes = transcriptomes.to(self.pl_model.model.device)
+            # transcriptomes = transcriptomes.to(self.pl_model.model.device)
         else:
             # Provide raw read counts, which will be processed by the model
             try:
@@ -104,16 +88,35 @@ class CellWhispererWrapper:
         # }
         terms = adaptor.data.uns["terms"]
 
-        similarity_scores_df = anndata_to_scored_keywords(
-            transcriptome_input=transcriptomes,
-            model=self.pl_model.model,
-            terms=terms,
-            transcriptome_processor=self.transcriptome_processor,
-            text_tokenizer=self.tokenizer,
-            average_mode="embeddings",
-            batch_size=64,
-            score_norm_method="zscore",
-        )
+        terms_df = prepare_terms(terms)  # additional_text_dict
+
+        if self.pl_model is None:
+            # Call the model via API
+            data = pickle.dumps((transcriptomes, terms_df["term"].to_list(), "embeddings", None, "zscore"))
+
+            # Send the POST request with the serialized data
+            response = requests.post(self.api_url + "/score_transcriptomes_vs_texts", data=data)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Deserialize the response data
+                scores = pickle.loads(response.content)
+            else:
+                logging.warning(f"Request failed with status code {response.status_code} and error {response.content}")
+                raise RuntimeError(f"Request to model API failed: {response.status_code}")
+
+        else:
+            scores, _ = score_transcriptomes_vs_texts(
+                model=self.pl_model.model,
+                transcriptome_input=transcriptomes,
+                text_list_or_text_embeds=terms_df["term"].to_list(),
+                average_mode="embeddings",
+                text_tokenizer=self.tokenizer,
+                transcriptome_processor=self.transcriptome_processor,
+                score_norm_method="zscore",
+            )  # n_text * 1
+
+        similarity_scores_df = rank_terms_by_score(scores, terms_df)
 
         top_5_entries = (
             similarity_scores_df.query("logits > 0.0")  # drop negatives
@@ -123,14 +126,10 @@ class CellWhispererWrapper:
         )
 
         # Combine the term names with the scores (logits)
-        top_5_entries["labels"] = (
-            top_5_entries["term_without_prefix"] + " (" + top_5_entries["logits"].astype(str) + ")"
-        )
+        top_5_entries["labels"] = top_5_entries["term"] + " (" + top_5_entries["logits"].astype(str) + ")"
 
         # Combine the term names with the scores (logits)
-        top_5_entries["labels"] = (
-            top_5_entries["term_without_prefix"] + " (" + top_5_entries["logits"].astype(str) + ")"
-        )
+        top_5_entries["labels"] = top_5_entries["term"] + " (" + top_5_entries["logits"].astype(str) + ")"
 
         # Group by 'library' and create a list of 'labels'
         grouped = top_5_entries.groupby("library")
@@ -161,9 +160,9 @@ class CellWhispererWrapper:
 
         if "transcriptome_embeds" in adaptor.data.obsm:
             transcriptomes = torch.from_numpy(adaptor.data.obsm["transcriptome_embeds"])
-            transcriptomes = transcriptomes.to(self.pl_model.model.device)
+            # transcriptomes = transcriptomes.to(self.pl_model.model.device)
         else:
-            raise NotImplementedError
+            assert self.pl_model is not None, "Model is not loaded, so embeddings need to be preprocessed in advance"
             # Provide raw read counts, which will be processed by the model
             transcriptomes = adaptor.data.to_memory(copy=True)  # NOTE copy is slow!
             transcriptomes.var.index = adaptor.data.var[var_index_col_name]
@@ -172,23 +171,23 @@ class CellWhispererWrapper:
         texts = text.split("MINUS")
         assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
 
-        # Serialize your input data
-        data = pickle.dumps(
-            (transcriptomes, texts, None, adaptor.data.obs[obs_index_col_name].astype(str).values, None)
-        )
+        if self.pl_model is None:
+            # Serialize your input data
+            data = pickle.dumps(
+                (transcriptomes, texts, None, adaptor.data.obs[obs_index_col_name].astype(str).values, None)
+            )
 
-        # Send the POST request with the serialized data
-        response = requests.post(API_URL, data=data)
+            # Send the POST request with the serialized data
+            response = requests.post(self.api_url + "/score_transcriptomes_vs_texts", data=data)
 
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Deserialize the response data
-            scores = pickle.loads(response.content)
-            logging.warning(scores)
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Deserialize the response data
+                scores = pickle.loads(response.content)
+            else:
+                logging.warning(f"Request failed with status code {response.status_code}, {response.content}")
+                raise RuntimeError(f"Request to model API failed: {response.status_code}")
         else:
-            logging.warning(f"Request failed with status code {response.status_code}")
-            # TODO return a 500 server error
-
             scores, _ = score_transcriptomes_vs_texts(
                 model=self.pl_model.model,
                 transcriptome_input=transcriptomes,
