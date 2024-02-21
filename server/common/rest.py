@@ -5,7 +5,7 @@ from http import HTTPStatus
 import zlib
 import json
 
-from flask import make_response, jsonify, current_app, abort
+from flask import make_response, jsonify, current_app, abort, stream_with_context
 from urllib.parse import unquote
 
 from server.common.config.client_config import get_client_config
@@ -473,6 +473,34 @@ def llm_embeddings_obs_post(request, data_adaptor):
     try:
         model_result = data_adaptor.llmembs_obs_to_text(selection_filter)
         return make_response(model_result, HTTPStatus.OK, {"Content-Type": "application/json"})
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_chat_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
+
+        # TODO more filters may be appropriate
+        if selection_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter cellSelection")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        chat_generator = data_adaptor.establish_llmembs_chat(args, selection_filter)
+
+        return make_response(stream_with_context(chat_generator), HTTPStatus.OK, {"Content-Type": "application/json"})
     except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
         return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
     except JSONEncodingValueError:

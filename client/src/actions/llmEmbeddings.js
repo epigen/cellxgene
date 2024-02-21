@@ -122,3 +122,88 @@ export const requestEmbeddingLLMWithText =
       });
     }
   };
+
+
+/*
+  Action creator to interact with the http_bot endpoint
+*/
+export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
+  dispatch({ type: "chat request start" });
+
+  try {
+    if (!cellSelection) cellSelection = []; // TODO raise an exception, as we need a selection
+
+    // These lines ensure that we convert any TypedArray to an Array.
+    // This is necessary because JSON.stringify() does some very strange
+    // things with TypedArrays (they are marshalled to JSON objects, rather
+    // than being marshalled as a JSON array).
+    cellSelection = Array.isArray(cellSelection)
+      ? cellSelection
+      : Array.from(cellSelection);
+
+    const pload = {
+      prompt: "<image>" + prompt,
+      cellSelection: { filter: { obs: { index: cellSelection } } },
+    };
+
+    const response = await fetch(`${globals.API.prefix}${globals.API.version}llmembs/chat`, {
+      method: 'POST',
+      headers: new Headers({
+        // Accept: "application/json",
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'identity' // This line indicates no compression (to allow streaming?) // TODO doesn't work though
+      }),
+      body: JSON.stringify(pload),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get response from the model');
+    }
+
+    // NOTE: The canonical way to solve this would probably be to use EventStreams. But it should also be possible with fetch as below
+    // Stream the response (assuming the API sends back chunked responses)
+    const reader = response.body.getReader();
+    let chunks = []; // array of received binary chunks (comprises the body)
+    let chunksAll = new Uint8Array(0);
+    let receivedLength = 0; // length at the moment
+    while(true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      console.log(value);
+      let temp = new Uint8Array(receivedLength + value.length);
+      temp.set(chunksAll, 0); // copy the old data
+      temp.set(value, receivedLength); // append the new chunk
+      chunksAll = temp; // reassign the extended array
+      receivedLength += value.length;
+
+      // get the last chunk
+
+      // Assuming chunksAll is the Uint8Array containing the data
+      let lastZeroIndex = chunksAll.lastIndexOf(0);
+
+      if (lastZeroIndex == -1) {
+        continue;
+      }
+      let secondLastZeroIndex = chunksAll.lastIndexOf(0, lastZeroIndex - 1);
+      if (secondLastZeroIndex == -1) {
+        secondLastZeroIndex = 0; // if there is no second zero, then start from the beginning
+      }
+      let lastChunk = chunksAll.slice(secondLastZeroIndex + 1, lastZeroIndex);
+
+      // Decode into a string
+      let result = new TextDecoder("utf-8").decode(lastChunk);
+
+      // Parse the JSON (assuming the final string is a JSON object)
+      const data = JSON.parse(result);
+
+      dispatch({ type: "chat request success", payload: data });
+    }
+
+  } catch (error) {
+    dispatch({ type: "chat request failure", payload: error.message });
+  }
+};

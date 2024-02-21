@@ -35,6 +35,7 @@ class ChatSideBar extends React.Component {
     dispatch(actions.requestEmbeddingLLMWithText(inputText));
   };
 
+  // TODO abandon this soon
   describeSelectedClick = () => {
     const { dispatch, obsCrossfilter } = this.props;
     if (obsCrossfilter.allSelectedLabels()) {
@@ -44,7 +45,16 @@ class ChatSideBar extends React.Component {
     }
   };
 
+  chatSelectedClick = () => {
+    const { dispatch, obsCrossfilter } = this.props;
+    const { inputText } = this.state;
+    // Dispatch the action to send the message
+    dispatch(actions.startChatRequest(inputText, obsCrossfilter.allSelectedLabels()));
+    this.setState({ inputText: "" }); // Clear the input after sending
+  };
+
   render() {
+    // TODO make sure that the button text is "<New?> Chat about <100> cells"
     const { outputText, loading, obsCrossfilter } = this.props;
     const { inputText } = this.state;
 
@@ -131,6 +141,17 @@ class ChatSideBar extends React.Component {
             style={{ margin: "0px 10px", padding: "0px 20px" }}
           >
             Describe selection
+          </Button>
+          <Button
+            onClick={this.chatSelectedClick}
+            disabled={
+              obsCrossfilter.countSelected() === 0 ||
+              obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs
+            }
+            loading={loading}
+            style={{ margin: "0px 10px", padding: "0px 20px" }}
+          >
+            Chat about selected
           </Button>
         </div>
       </div>

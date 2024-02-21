@@ -279,4 +279,5 @@ export default {
   requestEmbeddingLLMWithText: llmEmbeddingsActions.requestEmbeddingLLMWithText,
   requestEmbeddingLLMWithCells:
     llmEmbeddingsActions.requestEmbeddingLLMWithCells,
+  startChatRequest: llmEmbeddingsActions.startChatRequest,
 };
