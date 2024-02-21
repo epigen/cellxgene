@@ -189,6 +189,6 @@ class CellWhispererWrapper:
                 raise RuntimeError(f"Request to model API failed: {response.status_code}")
         else:
             assert self.pl_model is not None, "Model is not loaded, but querying API for text embedding failed as well"
-            text_embeds = self.pl_model.embed_text(texts)
+            text_embeds = self.pl_model.embed_texts(texts)
 
         return text_embeds
