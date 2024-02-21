@@ -142,7 +142,7 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       : Array.from(cellSelection);
 
     const pload = {
-      prompt: "<image>" + prompt,  // TODO we might want to further modify the prompt to contain the [INST] [/INST] mistral instructions if it is not done by the llava preprocessing code
+      prompt: "<image>" + prompt + "\n\n",  // TODO we might want to further modify the prompt to contain the [INST] [/INST] mistral instructions if it is not done by the llava preprocessing code
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 
@@ -151,7 +151,6 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       headers: new Headers({
         // Accept: "application/json",
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'identity' // This line indicates no compression (to allow streaming?) // TODO doesn't work though
       }),
       body: JSON.stringify(pload),
     });
@@ -163,7 +162,6 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
     // NOTE: The canonical way to solve this would probably be to use EventStreams. But it should also be possible with fetch as below
     // Stream the response (assuming the API sends back chunked responses)
     const reader = response.body.getReader();
-    let chunks = []; // array of received binary chunks (comprises the body)
     let chunksAll = new Uint8Array(0);
     let receivedLength = 0; // length at the moment
     while(true) {
@@ -189,16 +187,17 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
         continue;
       }
       let secondLastZeroIndex = chunksAll.lastIndexOf(0, lastZeroIndex - 1);
-      if (secondLastZeroIndex == -1) {
-        secondLastZeroIndex = 0; // if there is no second zero, then start from the beginning
-      }
-      let lastChunk = chunksAll.slice(secondLastZeroIndex + 1, lastZeroIndex);
+      // if secondLastZeroIndex is -1 (only 1 zero), go from the start
+      let lastChunk = chunksAll.slice(secondLastZeroIndex+1, lastZeroIndex);
 
       // Decode into a string
       let result = new TextDecoder("utf-8").decode(lastChunk);
 
       // Parse the JSON (assuming the final string is a JSON object)
       const data = JSON.parse(result);
+
+      // trim away the '<image>' string:
+      data["text"] = data["text"].replace("<image>", "");
 
       dispatch({ type: "chat request success", payload: data });
     }

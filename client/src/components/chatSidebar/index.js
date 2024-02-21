@@ -81,6 +81,7 @@ class ChatSideBar extends React.Component {
             padding: "5px 5px",
             margin: "5px 5px",
             flex: 1,
+            whiteSpace: "pre",
           }}
         >
           {typeof outputText === "string" ? (

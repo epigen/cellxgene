@@ -10,7 +10,6 @@ from flask import (
     Blueprint,
     request,
     send_from_directory,
-    stream_with_context,
 )
 from flask_restful import Api, Resource
 

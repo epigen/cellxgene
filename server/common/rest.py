@@ -500,7 +500,11 @@ def llm_embeddings_chat_post(request, data_adaptor):
     try:
         chat_generator = data_adaptor.establish_llmembs_chat(args, selection_filter)
 
-        return make_response(stream_with_context(chat_generator), HTTPStatus.OK, {"Content-Type": "application/json"})
+        response = make_response(
+            stream_with_context(chat_generator), HTTPStatus.OK, {"Content-Type": "application/json"}
+        )
+        response.headers["Content-Encoding"] = "identity"  # Explicitly set to 'identity' to indicate no compression
+        return response
     except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
         return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
     except JSONEncodingValueError:
