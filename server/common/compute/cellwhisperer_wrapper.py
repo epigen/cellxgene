@@ -213,7 +213,9 @@ class CellWhispererWrapper:
         }
 
         # Get the worker address from the controller
-        controller_url = "http://localhost:10000"  # TODO Replace
+        controller_url = (
+            "http://localhost:10000"  # TODO Replace with "cellwhisperer_llava_controller:1000" as in docker-compose
+        )
         worker_addr_response = requests.post(f"{controller_url}/get_worker_address", json={"model": model})
         worker_addr = worker_addr_response.json()["address"]
 

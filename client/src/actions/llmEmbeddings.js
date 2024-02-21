@@ -142,7 +142,7 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       : Array.from(cellSelection);
 
     const pload = {
-      prompt: "<image>" + prompt,
+      prompt: "<image>" + prompt,  // TODO we might want to further modify the prompt to contain the [INST] [/INST] mistral instructions if it is not done by the llava preprocessing code
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 
