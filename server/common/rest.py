@@ -433,6 +433,9 @@ def llm_embeddings_text_post(request, data_adaptor):
         index_name = data_adaptor.parameters.get("obs_names")
         labels.index = data_adaptor.data.obs[index_name]
 
+        if request.accept_mimetypes.accept_json:
+            return make_response(jsonify(labels.to_dict()), HTTPStatus.OK)
+
         fbs = data_adaptor.annotation_to_fbs_matrix(
             Axis.OBS, [annotation_name], labels.to_frame()
         )  # same as calling encode_matrix_fbs directly
