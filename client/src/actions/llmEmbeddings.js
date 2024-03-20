@@ -15,7 +15,7 @@ export const requestEmbeddingLLMWithCells =
     });
     try {
       // Legal values are null, Array or TypedArray.  Null is initial state.
-      if (!cellSelection) cellSelection = []; // TODO raise an exception, as we need a selection
+      if (!cellSelection) cellSelection = [];
 
       // These lines ensure that we convert any TypedArray to an Array.
       // This is necessary because JSON.stringify() does some very strange
@@ -102,8 +102,6 @@ export const requestEmbeddingLLMWithText =
         });
       }
 
-      // TODO process the annotation here (e.g. convert to dataframe etc)
-
       const buffer = await res.arrayBuffer();
       const dataframe = matrixFBSToDataframe(buffer);
       const col = dataframe.__columns[0];
@@ -131,7 +129,7 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
   dispatch({ type: "chat request start" });
 
   try {
-    if (!cellSelection) cellSelection = []; // TODO raise an exception, as we need a selection
+    if (!cellSelection) cellSelection = [];
 
     // These lines ensure that we convert any TypedArray to an Array.
     // This is necessary because JSON.stringify() does some very strange
@@ -142,7 +140,7 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       : Array.from(cellSelection);
 
     const pload = {
-      prompt: "<image>" + prompt + "\n\n",  // TODO we might want to further modify the prompt to contain the [INST] [/INST] mistral instructions if it is not done by the llava preprocessing code
+      prompt: "<image>" + prompt + "\n\n",
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 

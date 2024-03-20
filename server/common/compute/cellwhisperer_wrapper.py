@@ -196,7 +196,7 @@ class CellWhispererWrapper:
     def llm_chat(self, adaptor, prompt, mask):
         # Extract necessary information from the request
         prompt = prompt
-        model = "Mistral-7B-Instruct-v0.1__03jujd8s"
+        model = "Mistral-7B-Instruct-v0.2__03jujd8s"
         temperature = 0.2
         top_p = 0.7
         max_new_tokens = 512
