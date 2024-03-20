@@ -3,7 +3,7 @@
 */
 const LLMEmbedding = (
   state = {
-    outputText: "",
+    messages: [],
     loading: false,
   },
   action
@@ -25,15 +25,24 @@ const LLMEmbedding = (
     case "embedding model text response from cells": {
       return {
         ...state,
-        outputText: action.data,
+        messages: action.data,
         loading: false,
       };
     }
     case "request llm embeddings error": {
       return {
         ...state,
-        outputText: `ERROR: ${action.error}`,
+        messages: `ERROR: ${action.error}`,
         loading: false,
+      };
+    }
+
+    case "chat reset": {
+      return {
+        ...state,
+        // Add an empty message to the end of the list of messages
+        messages:  [],
+        // error: null,
       };
     }
 
@@ -41,13 +50,16 @@ const LLMEmbedding = (
       return {
         ...state,
         loading: true,
+        // Add an empty message to the end of the list of messages
+        messages:  action.newMessages.concat({ value: "", from: "gpt" }),
         // error: null,
       };
     }
     case "chat request success": {
       return {
         ...state,
-        outputText: action.payload.text, // Assuming the payload contains a 'text' field with the response
+        // Replace the last entry of messages
+        messages: state.messages.slice(0, -1).concat({ value: action.payload, from: "gpt" }),
         loading: false,
         // error: null,
       };
@@ -55,7 +67,7 @@ const LLMEmbedding = (
     case "chat request failure": {
       return {
         ...state,
-        outputText: action.payload, 
+        messages: state.messages.slice(0, -1).concat({ value: `ERROR: ${action.payload}`, from: "gpt" }),
         loading: false,
         // error: action.payload, // Error message
       };

@@ -1,6 +1,7 @@
 import logging
 
 import os
+import json
 import pandas as pd
 import numpy as np
 from typing import List
@@ -12,7 +13,9 @@ import torch
 from cellwhisperer.utils.inference import score_transcriptomes_vs_texts, rank_terms_by_score, prepare_terms
 import torch
 from cellwhisperer.utils.model_io import load_cellwhisperer_model
+from . import llava_utils, llava_conversation
 
+default_conversation = llava_conversation.conv_mistral_instruct
 
 logger = logging.getLogger(__name__)
 
@@ -193,15 +196,31 @@ class CellWhispererWrapper:
 
         return text_embeds
 
-    def llm_chat(self, adaptor, prompt, mask):
+    def llm_chat(self, adaptor, messages, mask):
         # Extract necessary information from the request
-        prompt = prompt
-        model = "Mistral-7B-Instruct-v0.2__03jujd8s"
-        temperature = 0.2
-        top_p = 0.7
-        max_new_tokens = 512
         transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
 
+        state = default_conversation.copy()
+        for i, message in enumerate(messages):
+            if i == 0:
+                assert message["from"] == "human"
+                llava_utils.add_text(state, message["value"], transcriptome_embeds, "Transcriptome")
+            else:
+                role = {"human": state.roles[0], "gpt": state.roles[1]}[message["from"]]
+                state.append_message(role, message["value"])
+        state.append_message(state.roles[1], None)
+
+        # TODO need to make CONTROLLER_URL flexible in there
+        for chunk in llava_utils.http_bot(
+            state, "Mistral-7B-Instruct-v0.2__03jujd8s", temperature=0.2, top_p=0.7, max_new_tokens=512
+        ):
+            yield json.dumps({"text": chunk}).encode() + b"\x00"
+
+    def manual_request():
+        """
+        unused in favor of function borrowed from llava
+
+        """
         # Construct the payload for the worker
         pload = {
             "model": model,
@@ -213,11 +232,9 @@ class CellWhispererWrapper:
         }
 
         # Get the worker address from the controller
-        controller_url = (
-            "http://localhost:10000"  # TODO Replace with "cellwhisperer_llava_controller:1000" as in docker-compose
-        )
         worker_addr_response = requests.post(f"{controller_url}/get_worker_address", json={"model": model})
         worker_addr = worker_addr_response.json()["address"]
+        print(worker_addr)
 
         # Stream the response
         with requests.post(

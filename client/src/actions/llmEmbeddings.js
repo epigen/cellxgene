@@ -125,8 +125,9 @@ export const requestEmbeddingLLMWithText =
 /*
   Action creator to interact with the http_bot endpoint
 */
-export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
-  dispatch({ type: "chat request start" });
+export const startChatRequest = (messages, prompt, cellSelection) => async (dispatch) => {
+  let newMessages = messages.concat({from: "human", value: prompt});
+  dispatch({ type: "chat request start", newMessages });
 
   try {
     if (!cellSelection) cellSelection = [];
@@ -140,7 +141,7 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       : Array.from(cellSelection);
 
     const pload = {
-      prompt: "<image>" + prompt + "\n\n",
+      messages: newMessages,  // TODO might need to add <image> to first message
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 
@@ -169,7 +170,6 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
         break;
       }
 
-      console.log(value);
       let temp = new Uint8Array(receivedLength + value.length);
       temp.set(chunksAll, 0); // copy the old data
       temp.set(value, receivedLength); // append the new chunk
@@ -195,9 +195,9 @@ export const startChatRequest = (prompt, cellSelection) => async (dispatch) => {
       const data = JSON.parse(result);
 
       // trim away the '<image>' string:
-      data["text"] = data["text"].replace("<image>", "");
+      data.text = data.text.replace("<image>", "");
 
-      dispatch({ type: "chat request success", payload: data });
+      dispatch({ type: "chat request success", payload: data.text });
     }
 
   } catch (error) {

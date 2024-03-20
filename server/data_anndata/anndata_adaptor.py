@@ -366,7 +366,7 @@ class AnndataAdaptor(DataAdaptor):
         except (KeyError, IndexError):
             raise FilterError("Error parsing filter")
 
-        return self.cellwhisperer.llm_chat(self, data["prompt"], obs_mask)
+        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask)
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)
