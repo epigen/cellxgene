@@ -181,6 +181,13 @@ class LLMEmbeddingsTextAPI(Resource):
         return common_rest.llm_embeddings_text_post(request, data_adaptor)
 
 
+class LLMEmbeddingsChatAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_chat_post(request, data_adaptor)
+
+
 class GenesetsAPI(Resource):
     @cache_control(public=True, max_age=ONE_WEEK)
     @rest_get_data_adaptor
@@ -238,6 +245,7 @@ def get_api_dataroot_resources(bp_dataroot):
     add_resource(LayoutObsAPI, "/layout/obs")
     add_resource(LLMEmbeddingsObsAPI, "/llmembs/obs")
     add_resource(LLMEmbeddingsTextAPI, "/llmembs/text")
+    add_resource(LLMEmbeddingsChatAPI, "/llmembs/chat")
     return api
 
 

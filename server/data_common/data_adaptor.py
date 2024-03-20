@@ -348,6 +348,10 @@ class DataAdaptor(metaclass=ABCMeta):
     def compute_llmembs_text_to_annotations(self, text):
         pass
 
+    @abstractmethod
+    def establish_llmembs_chat(self, data, obs_filter):
+        pass
+
     @staticmethod
     def normalize_embedding(embedding):
         """Normalize embedding layout to meet client assumptions.
@@ -435,6 +439,9 @@ class DataAdaptor(metaclass=ABCMeta):
         """
         Computes the mean expression of each gene in the dataset for the specified observations and runs the
         embedding LLM to generate a text
+        TODO this function might be a bit redundant (i.e. why not directly call compute_llmbembs_obs_to_text from rest.py?)
+
+
         :param obsFilter: filter: dictionary with filter params for set of observations (cells)
         :return: top N genes and corresponding stats
         """

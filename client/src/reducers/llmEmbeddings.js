@@ -37,8 +37,32 @@ const LLMEmbedding = (
       };
     }
 
-    default:
-      return state;
+    case "chat request start": {
+      return {
+        ...state,
+        loading: true,
+        // error: null,
+      };
+    }
+    case "chat request success": {
+      return {
+        ...state,
+        outputText: action.payload.text, // Assuming the payload contains a 'text' field with the response
+        loading: false,
+        // error: null,
+      };
+    }
+    case "chat request failure": {
+      return {
+        ...state,
+        outputText: action.payload, 
+        loading: false,
+        // error: action.payload, // Error message
+      };
+    }
+
+  default:
+    return state;
   }
 };
 

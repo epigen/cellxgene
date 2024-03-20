@@ -13,10 +13,11 @@ import server.common.compute.estimate_distribution as estimate_distribution
 from server.common.colors import convert_anndata_category_colors_to_cxg_category_colors
 from server.common.constants import Axis, MAX_LAYOUTS, XApproximateDistribution
 from server.common.corpora import corpora_get_props_from_anndata
-from server.common.errors import PrepareError, DatasetAccessError
+from server.common.errors import PrepareError, DatasetAccessError, FilterError
 from server.common.utils.type_conversion_utils import get_schema_type_hint_of_array
 from server.data_common.data_adaptor import DataAdaptor
 from server.common.fbs.matrix import encode_matrix_fbs
+
 
 anndata_version = version.parse(str(anndata.__version__)).release
 
@@ -349,6 +350,23 @@ class AnndataAdaptor(DataAdaptor):
         :return: pandas Series of cell embeddings
         """
         return self.cellwhisperer.llm_text_to_annotations(self, text=text)
+
+    def establish_llmembs_chat(self, data, obs_filter):
+        """
+        Computes the mean expression of each gene in the dataset for the specified observations and runs the
+        embedding LLM to generate a text
+        :param obs_filter: filter: dictionary with filter params for set of observations (cells)
+        :return: generator on text
+        """
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.llm_chat(self, data["prompt"], obs_mask)
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)

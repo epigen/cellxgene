@@ -192,3 +192,37 @@ class CellWhispererWrapper:
             text_embeds = self.pl_model.embed_texts(texts)
 
         return text_embeds
+
+    def llm_chat(self, adaptor, prompt, mask):
+        # Extract necessary information from the request
+        prompt = prompt
+        model = "Mistral-7B-Instruct-v0.2__03jujd8s"
+        temperature = 0.2
+        top_p = 0.7
+        max_new_tokens = 512
+        transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
+
+        # Construct the payload for the worker
+        pload = {
+            "model": model,
+            "prompt": prompt,
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_new_tokens": max_new_tokens,
+            "images": [transcriptome_embeds],
+        }
+
+        # Get the worker address from the controller
+        controller_url = (
+            "http://localhost:10000"  # TODO Replace with "cellwhisperer_llava_controller:1000" as in docker-compose
+        )
+        worker_addr_response = requests.post(f"{controller_url}/get_worker_address", json={"model": model})
+        worker_addr = worker_addr_response.json()["address"]
+
+        # Stream the response
+        with requests.post(
+            f"{worker_addr}/worker_generate_stream", headers={"User-Agent": "LLaVA Client"}, json=pload, stream=True
+        ) as r:
+            for chunk in r.iter_lines(delimiter=b"\x00"):
+                if chunk:
+                    yield chunk + b"\x00"
