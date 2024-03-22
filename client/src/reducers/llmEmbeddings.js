@@ -3,7 +3,7 @@
 */
 const LLMEmbedding = (
   state = {
-    messages: [],
+    messages: "The LLM still primarily hallucinates. Please use its results with a good portion of scepticism (you will see yourself).",
     loading: false,
   },
   action
