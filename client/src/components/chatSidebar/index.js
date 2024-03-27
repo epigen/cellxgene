@@ -134,7 +134,7 @@ class ChatSideBar extends React.Component {
             onChange={this.handleInputChange}
             placeholder="E.g. Describe the sample of selected cells..."
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText) {
                 this.chatSelectedClick();
               }
             }}
@@ -151,6 +151,8 @@ class ChatSideBar extends React.Component {
           <Button
             onClick={this.findCellsClick}
             disabled={!inputText}
+            active={true}  // reflect that "enter" presses this one
+            // autoFocus={true} // does not work, because focus needs to be on input field
             loading={loading}
             style={{ margin: "0px 0px", padding: "0px 20px" }}
           >
@@ -160,7 +162,6 @@ class ChatSideBar extends React.Component {
             onClick={this.chatSelectedClick}
             disabled={
               obsCrossfilter.countSelected() === 0 ||
-              obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ||
               !inputText
             }
             loading={loading}
@@ -169,7 +170,7 @@ class ChatSideBar extends React.Component {
             {
               JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) ?
                 "Start new conversation" : "Continue conversation"
-            } about {obsCrossfilter.countSelected()} cells
+            } about {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : obsCrossfilter.countSelected() + " selected"} cells
           </Button>
         </div>
       </div>
