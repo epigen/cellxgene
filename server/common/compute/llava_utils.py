@@ -17,6 +17,7 @@ from pathlib import Path
 logger = logging.getLogger("llava_utils")
 
 CONTROLLER_URL = "http://cellwhisperer_llava_controller:10000"
+# CONTROLLER_URL = "http://localhost:10000"
 LOGDIR = Path("logs/")
 LOGDIR.mkdir(exist_ok=True)
 
@@ -110,46 +111,47 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens):
     start_tstamp = time.time()
     model_name = model_selector
 
-    if len(state.messages) == state.offset + 2:
-        # First round of conversation
-        if "llava" in model_name.lower():
-            if "llama-2" in model_name.lower():
-                template_name = "llava_llama_2"
-            elif "mistral" in model_name.lower() or "mixtral" in model_name.lower():
-                if "orca" in model_name.lower():
-                    template_name = "mistral_orca"
-                elif "hermes" in model_name.lower():
-                    template_name = "chatml_direct"
-                else:
-                    template_name = "mistral_instruct"
-            elif "llava-v1.6-34b" in model_name.lower():
-                template_name = "chatml_direct"
-            elif "v1" in model_name.lower():
-                if "mmtag" in model_name.lower():
-                    template_name = "v1_mmtag"
-                elif "plain" in model_name.lower() and "finetune" not in model_name.lower():
-                    template_name = "v1_mmtag"
-                else:
-                    template_name = "llava_v1"
-            elif "mpt" in model_name.lower():
-                template_name = "mpt"
-            else:
-                if "mmtag" in model_name.lower():
-                    template_name = "v0_mmtag"
-                elif "plain" in model_name.lower() and "finetune" not in model_name.lower():
-                    template_name = "v0_mmtag"
-                else:
-                    template_name = "llava_v0"
-        elif "mpt" in model_name:
-            template_name = "mpt_text"
-        elif "llama-2" in model_name:
-            template_name = "llama_2"
-        else:
-            template_name = "vicuna_v1"
-        new_state = conv_templates[template_name].copy()
-        new_state.append_message(new_state.roles[0], state.messages[-2][1])
-        new_state.append_message(new_state.roles[1], None)
-        state = new_state
+    # For the first user-provided message, cut away the preamble
+    # if len(state.messages) == state.offset + 2:
+    #     # First round of conversation
+    #     if "llava" in model_name.lower() or "mistral" in model_name.lower() or "mixtral" in model_name.lower():
+    #         if "llama-2" in model_name.lower():
+    #             template_name = "llava_llama_2"
+    #         elif "mistral" in model_name.lower() or "mixtral" in model_name.lower():
+    #             if "orca" in model_name.lower():
+    #                 template_name = "mistral_orca"
+    #             elif "hermes" in model_name.lower():
+    #                 template_name = "chatml_direct"
+    #             else:
+    #                 template_name = "mistral_instruct"
+    #         elif "llava-v1.6-34b" in model_name.lower():
+    #             template_name = "chatml_direct"
+    #         elif "v1" in model_name.lower():
+    #             if "mmtag" in model_name.lower():
+    #                 template_name = "v1_mmtag"
+    #             elif "plain" in model_name.lower() and "finetune" not in model_name.lower():
+    #                 template_name = "v1_mmtag"
+    #             else:
+    #                 template_name = "llava_v1"
+    #         elif "mpt" in model_name.lower():
+    #             template_name = "mpt"
+    #         else:
+    #             if "mmtag" in model_name.lower():
+    #                 template_name = "v0_mmtag"
+    #             elif "plain" in model_name.lower() and "finetune" not in model_name.lower():
+    #                 template_name = "v0_mmtag"
+    #             else:
+    #                 template_name = "llava_v0"
+    #     elif "mpt" in model_name:
+    #         template_name = "mpt_text"
+    #     elif "llama-2" in model_name:
+    #         template_name = "llama_2"
+    #     else:
+    #         template_name = "vicuna_v1"
+    #     new_state = conv_templates[template_name].copy()
+    #     new_state.append_message(new_state.roles[0], state.messages[-2][1])
+    #     new_state.append_message(new_state.roles[1], None)
+    #     state = new_state
 
     # Query worker address
     ret = requests.post(CONTROLLER_URL + "/get_worker_address", json={"model": model_name})
