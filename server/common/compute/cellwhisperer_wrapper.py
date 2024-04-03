@@ -226,21 +226,19 @@ class CellWhispererWrapper:
         state = default_conversation.copy()
 
         # TODO consider including both normalized and unnormalized genes. Why? A reviewer might check whether the genes are amongst the top expressed ones
-        state.messages = [
-            [
-                "USER",
-                f"Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
-            ],
-            [
-                "ASSISTANT",
-                f"Sure, It looks like the top normalized genes are {', '.join(top_genes)}.",
-            ],
+
+        INIT_MESSAGES = [
+            {
+                "from": "human",
+                "value": f"Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
+            },
+            {
+                "from": "gpt",
+                "value": f"Sure, It looks like the top normalized genes are {', '.join(top_genes)}.",
+            },
         ]
-        state.offset = 2
 
-        # TODO the transcriptome is added too late. consider changing
-
-        for i, message in enumerate(messages):
+        for i, message in enumerate(INIT_MESSAGES + messages):
             if i == 0:
                 assert message["from"] == "human"
                 llava_utils.add_text(state, message["value"], transcriptome_embeds, "Transcriptome")
@@ -248,6 +246,8 @@ class CellWhispererWrapper:
                 role = {"human": state.roles[0], "gpt": state.roles[1]}[message["from"]]
                 state.append_message(role, message["value"])
         state.append_message(state.roles[1], None)
+
+        state.offset = 2
 
         # TODO need to make CONTROLLER_URL flexible in there
         for chunk in llava_utils.http_bot(
