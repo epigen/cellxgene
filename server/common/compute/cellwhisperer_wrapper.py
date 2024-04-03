@@ -200,8 +200,45 @@ class CellWhispererWrapper:
         # Extract necessary information from the request
         transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
 
+        transcriptomes = adaptor.data.X[mask]
+        if transcriptomes.shape[0] > 10000:
+            logging.warning("Too many cells to process, sampling 10k cells")
+            transcriptomes = transcriptomes[np.random.choice(transcriptomes.shape[0], 10000, replace=False)]
+        mean_transcriptome = transcriptomes.mean(axis=0).A1
+
+        # Compute top genes
+        try:
+            mean_normalized_transcriptome = (
+                mean_transcriptome - adaptor.data.var["log1p_normalizer"].to_numpy()
+            )  # normalize in logspace via difference
+        except KeyError:
+            logging.warning("No log1p_normalizer found in var. Using unnormalized log1ps to compute top genes")
+            mean_normalized_transcriptome = mean_transcriptome
+
+        n_top_genes = 20  # TODO needs to become config
+        top_genes = (
+            pd.Series(data=mean_normalized_transcriptome, index=adaptor.data.var.gene_name)
+            .nlargest(n_top_genes)
+            .index.tolist()
+        )
+
+        # Initialize the conversation
         state = default_conversation.copy()
-        for i, message in enumerate(messages):
+
+        # TODO consider including both normalized and unnormalized genes. Why? A reviewer might check whether the genes are amongst the top expressed ones
+
+        INIT_MESSAGES = [
+            {
+                "from": "human",
+                "value": "Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
+            },
+            {
+                "from": "gpt",
+                "value": f"Sure, It looks like the top normalized genes are {', '.join(top_genes)}.",
+            },
+        ]
+
+        for i, message in enumerate(INIT_MESSAGES + messages):
             if i == 0:
                 assert message["from"] == "human"
                 llava_utils.add_text(state, message["value"], transcriptome_embeds, "Transcriptome")
@@ -209,6 +246,8 @@ class CellWhispererWrapper:
                 role = {"human": state.roles[0], "gpt": state.roles[1]}[message["from"]]
                 state.append_message(role, message["value"])
         state.append_message(state.roles[1], None)
+
+        state.offset = 2
 
         # TODO need to make CONTROLLER_URL flexible in there
         for chunk in llava_utils.http_bot(
