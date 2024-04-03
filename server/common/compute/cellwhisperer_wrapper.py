@@ -230,7 +230,7 @@ class CellWhispererWrapper:
         INIT_MESSAGES = [
             {
                 "from": "human",
-                "value": "Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
+                "value": f"Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
             },
             {
                 "from": "gpt",
