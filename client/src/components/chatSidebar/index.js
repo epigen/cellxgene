@@ -16,6 +16,7 @@ function renderList(items) {
 @connect((state) => ({
   ...state.llmEmbeddings,
   obsCrossfilter: state.obsCrossfilter,
+  enableGeneScoreContributions: state.config?.parameters?.["enable-llmembs-gene-score-contribution"] ?? false,
 }))
 class ChatSideBar extends React.Component {
   constructor(props) {
@@ -167,17 +168,19 @@ class ChatSideBar extends React.Component {
           >
             Find cells
           </Button>
-          <Button
-            onClick={this.geneContributionClicked}
-            disabled={
-              obsCrossfilter.countSelected() === 0 ||
-                !inputText
-            }
-            loading={loading}
-            style={{ margin: "0px 10px", padding: "0px 20px" }}
-          >
-            Interpret {obsCrossfilter.countSelected()} selected cells
-          </Button>
+          { this.props.enableGeneScoreContributions &&
+            <Button
+              onClick={this.geneContributionClicked}
+              disabled={
+                obsCrossfilter.countSelected() === 0 ||
+                  !inputText
+              }
+              loading={loading}
+              style={{ margin: "0px 10px", padding: "0px 20px" }}
+            >
+              Interpret {obsCrossfilter.countSelected()} selected cells
+            </Button>
+          }
           <Button
             onClick={this.chatSelectedClick}
             disabled={
