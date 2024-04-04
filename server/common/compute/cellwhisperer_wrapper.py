@@ -265,16 +265,22 @@ class CellWhispererWrapper:
         Which genes increase or decrease the prompt-similiarity in the selected cells?
         """
 
-        # TODO need to calculate it I believe
-        transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
+        var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
+        obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
+        try:
+            transcriptomes = adaptor.data[mask].to_memory(copy=True)
+        except MemoryError:
+            raise
+
+        transcriptomes.var.index = adaptor.data.var[var_index_col_name].astype(str)
+        transcriptomes.obs.index = adaptor.data.obs.loc[mask, obs_index_col_name].astype(str)
 
         text_embeds = self._embed_texts([prompt])
 
         gene_contribs: pd.Series = gene_score_contributions(
-            transcriptome_input=transcriptome_embeds,
+            transcriptome_input=transcriptomes,
             text_list_or_text_embeds=text_embeds,
             logit_scale=self.logit_scale,
-            average_mode=None,
             score_norm_method=None,
         ).sort_values()
 
