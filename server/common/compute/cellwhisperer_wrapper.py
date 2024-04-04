@@ -4,7 +4,7 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Union
 
 import requests
 import pickle
@@ -14,7 +14,7 @@ from cellwhisperer.utils.inference import (
     score_transcriptomes_vs_texts,
     rank_terms_by_score,
     prepare_terms,
-    gene_score_contributions,
+    # gene_score_contributions,
 )
 import torch
 from cellwhisperer.utils.model_io import load_cellwhisperer_model
@@ -23,6 +23,23 @@ from . import llava_utils, llava_conversation
 default_conversation = llava_conversation.conv_mistral_instruct
 
 logger = logging.getLogger(__name__)
+
+
+def gene_score_contributions(
+    transcriptome_input: torch.Tensor,
+    text_list_or_text_embeds: Union[List[str], torch.Tensor],
+    logit_scale: float,
+    score_norm_method: str = None,
+) -> pd.Series:
+    """
+    Just a dummy for testing
+    """
+    return pd.Series(
+        {
+            "Gene 1": 0.1,
+            "Gene 2": -0.1,
+        }
+    )
 
 
 class CellWhispererWrapper:

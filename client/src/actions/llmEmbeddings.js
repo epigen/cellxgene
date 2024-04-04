@@ -260,7 +260,7 @@ export const geneContributionRequest =
       const response = await res.json();
       return dispatch({
         type: "embedding model gene contributions response",
-        data: JSON.stringify(response, null, 2),
+        data: JSON.stringify(response, null, "\t"),
       });
     } catch (error) {
       return dispatch({

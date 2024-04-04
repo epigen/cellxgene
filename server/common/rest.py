@@ -518,7 +518,7 @@ def llm_embeddings_gene_contributions_post(request, data_adaptor):
     if not data_adaptor.dataset_config.llmembs__enable:
         return abort(HTTPStatus.NOT_IMPLEMENTED)
 
-    if not data_adaptor.dataset.config.llmembs__gene_score_contribution_enable:  # TODO establish everywhere
+    if not data_adaptor.dataset_config.llmembs__gene_score_contribution_enable:
         return abort(HTTPStatus.NOT_IMPLEMENTED)
 
     args = request.get_json()

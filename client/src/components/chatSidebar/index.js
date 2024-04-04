@@ -16,7 +16,7 @@ function renderList(items) {
 @connect((state) => ({
   ...state.llmEmbeddings,
   obsCrossfilter: state.obsCrossfilter,
-  enableGeneScoreContributions: state.config?.parameters?.["enable-llmembs-gene-score-contribution"] ?? false,
+  enableGeneScoreContributions: state.config?.parameters?.["enable-llmembs_gene_score_contribution"] ?? false,
 }))
 class ChatSideBar extends React.Component {
   constructor(props) {
@@ -75,7 +75,7 @@ class ChatSideBar extends React.Component {
   };
 
   render() {
-    const { messages, loading, obsCrossfilter } = this.props;
+    const { messages, loading, obsCrossfilter, enableGeneScoreContributions } = this.props;
     const { inputText, conversationSample } = this.state;
 
     return (
@@ -168,7 +168,7 @@ class ChatSideBar extends React.Component {
           >
             Find cells
           </Button>
-          { this.props.enableGeneScoreContributions &&
+          { enableGeneScoreContributions &&
             <Button
               onClick={this.geneContributionClicked}
               disabled={
