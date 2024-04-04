@@ -74,6 +74,79 @@ class ChatSideBar extends React.Component {
     }
   };
 
+  renderMessages() {
+    const { messages } = this.props;
+    return (
+      <div
+      >
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            style={{
+              display: 'flex',
+              justifyContent: message.from === "human" ? 'flex-end' : 'flex-start',
+              margin: "5px",
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: message.from === "human" ? "#96c03a" : "#bee3ef",
+                padding: "5px 10px",
+                borderRadius: "5px",
+                width: "90%", // Prevents the bubble from stretching too wide
+                justifyContent: "space-between",
+              }}
+            >
+              {message.from === "human" ? null : <span> {message.value} </span>}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexDirection: 'row'
+              }}>
+                <button
+                  onClick={() => handleThumbsUp(message.id)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    opacity: 0.5,
+                    transition: "opacity 0.3s ease",
+                    marginLeft: "5px", // Space between text and button
+                    padding: 0
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                >
+                  👍
+                </button>
+                <button
+                  onClick={() => handleThumbsDown(message.id)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    opacity: 0.5,
+                    transition: "opacity 0.3s ease",
+                    marginLeft: "3px", // Space between buttons
+                    padding: 0
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                >
+                  👎
+                </button>
+              </div>
+              {message.from === "human" ? <span> {message.value} </span> : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+
+  }
+
   render() {
     const { messages, loading, obsCrossfilter, enableGeneScoreContributions } = this.props;
     const { inputText, conversationSample } = this.state;
@@ -106,32 +179,7 @@ class ChatSideBar extends React.Component {
         >
           {typeof messages === "string" ? (
             messages
-          ) : (
-            <div
-            >
-              {messages.map((message) => (
-                <div
-                  style={message.from == "human" ? {
-                    textAlign: "right",
-                    backgroundColor: "#96c03a",
-                    margin: "5px 5px",
-                    padding: "5px 5px",
-                    paddingLeft: "20px",
-                    borderRadius: "5px",
-                  } : {
-                    textAlign: "left",
-                    backgroundColor: "#bee3ef",
-                    margin: "5px 5px",
-                    padding: "5px 5px",
-                    paddingRight: "20px",
-                    borderRadius: "5px",
-                  }}
-                >
-                  {message.value}
-                </div>
-              ))}
-            </div>
-          )}
+          ) : this.renderMessages()}
         </div>
         <div
           style={{
