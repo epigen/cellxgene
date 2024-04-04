@@ -280,32 +280,3 @@ class CellWhispererWrapper:
 
         top_bottom: pd.Series = pd.concat([gene_contribs.iloc[:10], gene_contribs.iloc[-10:]])  # type: ignore
         return top_bottom
-
-    def manual_chat_request():
-        """
-        unused in favor of function borrowed from llava
-        DEPRECATED/DELETE
-
-        """
-        # Construct the payload for the worker
-        pload = {
-            "model": model,
-            "prompt": prompt,
-            "temperature": temperature,
-            "top_p": top_p,
-            "max_new_tokens": max_new_tokens,
-            "images": [transcriptome_embeds],
-        }
-
-        # Get the worker address from the controller
-        worker_addr_response = requests.post(f"{controller_url}/get_worker_address", json={"model": model})
-        worker_addr = worker_addr_response.json()["address"]
-        print(worker_addr)
-
-        # Stream the response
-        with requests.post(
-            f"{worker_addr}/worker_generate_stream", headers={"User-Agent": "LLaVA Client"}, json=pload, stream=True
-        ) as r:
-            for chunk in r.iter_lines(delimiter=b"\x00"):
-                if chunk:
-                    yield chunk + b"\x00"
