@@ -1,5 +1,6 @@
 /*
   Reducers for LLMEmbedding.
+  NOTE: could be refactored, by merging most actions
 */
 const LLMEmbedding = (
   state = {
@@ -23,6 +24,14 @@ const LLMEmbedding = (
     }
 
     case "embedding model text response from cells": {
+      return {
+        ...state,
+        messages: action.data,
+        loading: false,
+      };
+    }
+
+    case "embedding model gene contributions response": {
       return {
         ...state,
         messages: action.data,

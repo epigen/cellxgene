@@ -512,3 +512,38 @@ def llm_embeddings_chat_post(request, data_adaptor):
         # to default exception handler.
         current_app.logger.warning(JSON_NaN_to_num_warning_msg)
         raise
+
+
+def llm_embeddings_gene_contributions_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    if not data_adaptor.dataset.config.llmembs__gene_score_contribution_enable:  # TODO establish everywhere
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        text = args.get("text")
+
+        if text is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter text")
+
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
+
+        if selection_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter set1")
+        if Axis.VAR in selection_filter:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "var axis filter not enabled")
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        gene_score_contributions = data_adaptor.compute_gene_score_contributions(text, selection_filter)
+        return make_response(jsonify(gene_score_contributions.to_dict()), HTTPStatus.OK)
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise

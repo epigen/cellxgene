@@ -10,7 +10,12 @@ import requests
 import pickle
 import torch
 
-from cellwhisperer.utils.inference import score_transcriptomes_vs_texts, rank_terms_by_score, prepare_terms
+from cellwhisperer.utils.inference import (
+    score_transcriptomes_vs_texts,
+    rank_terms_by_score,
+    prepare_terms,
+    gene_score_contributions,
+)
 import torch
 from cellwhisperer.utils.model_io import load_cellwhisperer_model
 from . import llava_utils, llava_conversation
@@ -255,9 +260,31 @@ class CellWhispererWrapper:
         ):
             yield json.dumps({"text": chunk}).encode() + b"\x00"
 
-    def manual_request():
+    def gene_score_contributions(self, adaptor, prompt, mask) -> pd.Series:
+        """
+        Which genes increase or decrease the prompt-similiarity in the selected cells?
+        """
+
+        # TODO need to calculate it I believe
+        transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
+
+        text_embeds = self._embed_texts([prompt])
+
+        gene_contribs: pd.Series = gene_score_contributions(
+            transcriptome_input=transcriptome_embeds,
+            text_list_or_text_embeds=text_embeds,
+            logit_scale=self.logit_scale,
+            average_mode=None,
+            score_norm_method=None,
+        ).sort_values()
+
+        top_bottom: pd.Series = pd.concat([gene_contribs.iloc[:10], gene_contribs.iloc[-10:]])  # type: ignore
+        return top_bottom
+
+    def manual_chat_request():
         """
         unused in favor of function borrowed from llava
+        DEPRECATED/DELETE
 
         """
         # Construct the payload for the worker

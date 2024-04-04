@@ -4,6 +4,7 @@ import { matrixFBSToDataframe } from "../util/stateManager/matrix";
 
 /*
   LLM embedding querying
+  NOTE: could be refactored by merging most dispatchers
 */
 export const requestEmbeddingLLMWithCells =
   /*
@@ -204,3 +205,67 @@ export const startChatRequest = (messages, prompt, cellSelection) => async (disp
     dispatch({ type: "chat request failure", payload: error.message });
   }
 };
+
+/*
+  Action creator to get score gene contributions
+  NOTE: code is very similar to the other requests and could be DRYed
+*/
+export const geneContributionRequest =
+  /*
+    Send a request to the LLM embedding model with text
+  */
+  (text, cellSelection) => async (dispatch) => {
+    dispatch({
+      type: "request to embedding model started",
+    });
+    try {
+      // Legal values are null, Array or TypedArray.  Null is initial state.
+      if (!cellSelection) cellSelection = [];
+
+      // These lines ensure that we convert any TypedArray to an Array.
+      // This is necessary because JSON.stringify() does some very strange
+      // things with TypedArrays (they are marshalled to JSON objects, rather
+      // than being marshalled as a JSON array).
+      cellSelection = Array.isArray(cellSelection)
+        ? cellSelection
+        : Array.from(cellSelection);
+
+      const res = await fetch(
+        `${globals.API.prefix}${globals.API.version}llmembs/interpret`,
+        {
+          method: "POST",
+          headers: new Headers({
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          }),
+          body: JSON.stringify({
+            cellSelection: { filter: { obs: { index: cellSelection } } },
+            text
+          }),
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok || res.headers.get("Content-Type") !== "application/json") {
+        return dispatch({
+          type: "request llm embeddings error",
+          error: new Error(
+            `Unexpected response ${res.status} ${
+              res.statusText
+            } ${res.headers.get("Content-Type")}}`
+          ),
+        });
+      }
+
+      const response = await res.json();
+      return dispatch({
+        type: "embedding model gene contributions response",
+        data: JSON.stringify(response, null, 2),
+      });
+    } catch (error) {
+      return dispatch({
+        type: "request llm embeddings error",
+        error,
+      });
+    }
+  };

@@ -3,6 +3,8 @@ import warnings
 
 import anndata
 import numpy as np
+import pandas as pd
+
 from packaging import version
 from pandas.core.dtypes.dtypes import CategoricalDtype
 from scipy import sparse
@@ -350,6 +352,18 @@ class AnndataAdaptor(DataAdaptor):
         :return: pandas Series of cell embeddings
         """
         return self.cellwhisperer.llm_text_to_annotations(self, text=text)
+
+    def compute_gene_score_contributions(self, text, obs_filter) -> pd.Series:
+        """ """
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.gene_score_contributions(self, text, obs_mask)
 
     def establish_llmembs_chat(self, data, obs_filter):
         """

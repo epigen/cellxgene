@@ -3,7 +3,6 @@ from os.path import basename, splitext
 import numpy as np
 import pandas as pd
 from scipy import sparse
-from server.common.rest import llm_embeddings_obs_post
 from server_timing import Timing as ServerTiming
 
 from server.common.config.app_config import AppConfig
@@ -342,6 +341,10 @@ class DataAdaptor(metaclass=ABCMeta):
 
     @abstractmethod
     def compute_llmembs_obs_to_text(self, mask):
+        pass
+
+    @abstractmethod
+    def compute_gene_score_contributions(self, text, obs_filter) -> pd.Series:
         pass
 
     @abstractmethod
