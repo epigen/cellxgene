@@ -226,7 +226,7 @@ class ChatSideBar extends React.Component {
               loading={loading}
               style={{ margin: "0px 10px", padding: "0px 20px" }}
             >
-              Interpret {obsCrossfilter.countSelected()} selected cells
+              Interpret selected pseudocell (mean of n={obsCrossfilter.countSelected()})
             </Button>
           }
           <Button
@@ -241,7 +241,7 @@ class ChatSideBar extends React.Component {
             {
               JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) ?
                 "Start new conversation" : "Continue conversation"
-            } about {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : obsCrossfilter.countSelected() + " selected"} cells
+            } about selected pseudocell (mean of {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : "n=" + obsCrossfilter.countSelected()})
           </Button>
         </div>
       </div>
