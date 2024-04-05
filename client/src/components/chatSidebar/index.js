@@ -99,52 +99,51 @@ class ChatSideBar extends React.Component {
                 justifyContent: "space-between",
               }}
             >
-              {message.from === "human" ? null : <span> {message.value} </span>}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexDirection: 'row'
-              }}>
-                <button
-                  onClick={() => handleThumbsUp(message.id)}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    cursor: "pointer",
-                    opacity: 0.5,
-                    transition: "opacity 0.3s ease",
-                    marginLeft: "5px", // Space between text and button
-                    padding: 0
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
-                >
-                  👍
-                </button>
-                <button
-                  onClick={() => handleThumbsDown(message.id)}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    cursor: "pointer",
-                    opacity: 0.5,
-                    transition: "opacity 0.3s ease",
-                    marginLeft: "3px", // Space between buttons
-                    padding: 0
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
-                >
-                  👎
-                </button>
-              </div>
-              {message.from === "human" ? <span> {message.value} </span> : null}
+              <span> {message.value} </span>
+              { message.from === "gpt" ?
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexDirection: 'column'
+                }}>
+                  <button
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      opacity: 0.5,
+                      transition: "opacity 0.3s ease",
+                      padding: "3px 0px"
+                    }}
+                    onClick={() => this.handleThumb(index, "up")}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                  >
+                    👍
+                  </button>
+                  <button
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      opacity: 0.5,
+                      transition: "opacity 0.3s ease",
+                      padding: "3px"
+                    }}
+                    onClick={() => this.handleThumb(index, "down")}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                  >
+                    👎
+                  </button>
+                </div>
+                : null
+              }
             </div>
           </div>
         ))}
       </div>
     );
-
   }
 
   render() {
