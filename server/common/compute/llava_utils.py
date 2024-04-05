@@ -18,7 +18,7 @@ logger = logging.getLogger("llava_utils")
 
 CONTROLLER_URL = "http://cellwhisperer_llava_controller:10000"
 # CONTROLLER_URL = "http://localhost:10000"
-LOGDIR = Path("logs/")
+LOGDIR = Path(os.getenv("LOGDIR", "./logs/"))
 LOGDIR.mkdir(exist_ok=True)
 
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
@@ -28,7 +28,7 @@ headers = {"User-Agent": "LLaVA Client"}
 
 def get_conv_log_filename():
     t = datetime.datetime.now()
-    return LOGDIR / f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json"
+    return LOGDIR / f"{t.year}-{t.month:02d}-{t.day:02d}_conv.json"
 
 
 # def get_model_list():

@@ -224,13 +224,16 @@ class CellWhispererWrapper:
         # Extract necessary information from the request
         transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
 
-        transcriptomes = adaptor.data.X[mask]
-        if transcriptomes.shape[0] > 10000:
-            logging.warning("Too many cells to process, sampling 10k cells")
+        if mask.sum() > 5000:
+            logging.warning("Too many cells to process, sampling 5k cells")
 
             np.random.seed(42)
-            transcriptomes = transcriptomes[np.random.choice(transcriptomes.shape[0], 10000, replace=False)]
-        mean_transcriptome = transcriptomes.mean(axis=0).A1
+
+            selected_indices = np.random.choice(np.where(mask)[0], 5000, replace=False)
+            mask = np.zeros(adaptor.data.shape[0], dtype=bool)
+            mask[selected_indices] = True
+
+        mean_transcriptome = adaptor.data.X[mask,].mean(axis=0).A1
 
         # Compute top genes
         try:
