@@ -3,6 +3,9 @@ import { connect } from "react-redux";
 import { Button, InputGroup } from "@blueprintjs/core";
 import actions from "../../actions";
 
+const INITIAL_TEMPERATURE = 0.0;
+const REGENERATE_TEMPERATURE = 1.0;
+
 function renderList(items) {
   return (
     <ul>
@@ -50,7 +53,7 @@ class ChatSideBar extends React.Component {
       submitMessages = [];
       this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
     }
-    dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels()));
+    dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
     this.setState({ inputText: "" }); // Clear the input after sending
   };
 
@@ -67,7 +70,7 @@ class ChatSideBar extends React.Component {
     if (thumbDirection === "down") {
       let submitMessages = messagesCopy.slice(0, -1);
       const userMessage = submitMessages.pop()["value"];
-      dispatch(actions.startChatRequest(submitMessages, userMessage, conversationSample));
+      dispatch(actions.startChatRequest(submitMessages, userMessage, conversationSample, REGENERATE_TEMPERATURE));
       // get rid of all liked messages with smaller index
       this.setState({ likedMessages: this.state.likedMessages.filter((likedMessageId) => likedMessageId > messageId) });
     } else {

@@ -380,7 +380,7 @@ class AnndataAdaptor(DataAdaptor):
         except (KeyError, IndexError):
             raise FilterError("Error parsing filter")
 
-        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask)
+        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask, temperature=data.get("temperature", 0.0))
 
     def llmembs_feedback(self, data, obs_filter):
         if Axis.VAR in obs_filter:

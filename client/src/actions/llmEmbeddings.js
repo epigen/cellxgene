@@ -126,7 +126,7 @@ export const requestEmbeddingLLMWithText =
 /*
   Action creator to interact with the http_bot endpoint
 */
-export const startChatRequest = (messages, prompt, cellSelection) => async (dispatch) => {
+export const startChatRequest = (messages, prompt, cellSelection, temperature) => async (dispatch) => {
   let newMessages = messages.concat({from: "human", value: prompt});
   dispatch({ type: "chat request start", newMessages });
 
@@ -143,6 +143,7 @@ export const startChatRequest = (messages, prompt, cellSelection) => async (disp
 
     const pload = {
       messages: newMessages,
+      temperature,
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 

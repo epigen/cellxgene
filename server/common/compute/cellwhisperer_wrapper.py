@@ -284,13 +284,13 @@ class CellWhispererWrapper:
 
         llava_utils.log_state(state, thumbDirection, MODEL_NAME)
 
-    def llm_chat(self, adaptor, messages, mask):
+    def llm_chat(self, adaptor, messages, mask, temperature):
         state = self._prepare_messages(adaptor, messages, mask)
 
         state.append_message(state.roles[1], None)
 
         # TODO need to make CONTROLLER_URL flexible in there
-        for chunk in llava_utils.http_bot(state, MODEL_NAME, temperature=0.1, top_p=0.7, max_new_tokens=512, log=True):
+        for chunk in llava_utils.http_bot(state, MODEL_NAME, temperature, top_p=0.7, max_new_tokens=512, log=True):
             yield json.dumps({"text": chunk}).encode() + b"\x00"
 
     def gene_score_contributions(self, adaptor, prompt, mask) -> pd.Series:
