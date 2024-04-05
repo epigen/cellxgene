@@ -24,6 +24,8 @@ default_conversation = llava_conversation.conv_mistral_instruct
 
 logger = logging.getLogger(__name__)
 
+MODEL_NAME = "Mistral-7B-Instruct-v0.2__03jujd8s"
+
 
 def gene_score_contributions(
     transcriptome_input: torch.Tensor,
@@ -218,13 +220,15 @@ class CellWhispererWrapper:
 
         return text_embeds
 
-    def llm_chat(self, adaptor, messages, mask):
+    def _prepare_messages(self, adaptor, messages, mask):
         # Extract necessary information from the request
         transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
 
         transcriptomes = adaptor.data.X[mask]
         if transcriptomes.shape[0] > 10000:
             logging.warning("Too many cells to process, sampling 10k cells")
+
+            np.random.seed(42)
             transcriptomes = transcriptomes[np.random.choice(transcriptomes.shape[0], 10000, replace=False)]
         mean_transcriptome = transcriptomes.mean(axis=0).A1
 
@@ -269,12 +273,24 @@ class CellWhispererWrapper:
             else:
                 role = {"human": state.roles[0], "gpt": state.roles[1]}[message["from"]]
                 state.append_message(role, message["value"])
+
+        return state
+
+    def llm_feedback(self, adaptor, messages, mask, thumbDirection):
+        """
+        Log the values of the conversation
+        """
+        state = self._prepare_messages(adaptor, messages, mask)
+
+        llava_utils.log_state(state, thumbDirection, MODEL_NAME)
+
+    def llm_chat(self, adaptor, messages, mask):
+        state = self._prepare_messages(adaptor, messages, mask)
+
         state.append_message(state.roles[1], None)
 
         # TODO need to make CONTROLLER_URL flexible in there
-        for chunk in llava_utils.http_bot(
-            state, "Mistral-7B-Instruct-v0.2__03jujd8s", temperature=0.2, top_p=0.7, max_new_tokens=512
-        ):
+        for chunk in llava_utils.http_bot(state, MODEL_NAME, temperature=0.1, top_p=0.7, max_new_tokens=512, log=True):
             yield json.dumps({"text": chunk}).encode() + b"\x00"
 
     def gene_score_contributions(self, adaptor, prompt, mask) -> pd.Series:

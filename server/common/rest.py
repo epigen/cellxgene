@@ -514,6 +514,30 @@ def llm_embeddings_chat_post(request, data_adaptor):
         raise
 
 
+def llm_embeddings_feedback_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        args["thumbDirection"]
+        args["messages"]
+        selection_filter = args["cellSelection"]["filter"]
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        data_adaptor.llmembs_feedback(args, selection_filter)
+        return make_response(jsonify({"status": "OK"}), HTTPStatus.OK)
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
 def llm_embeddings_gene_contributions_post(request, data_adaptor):
     if not data_adaptor.dataset_config.llmembs__enable:
         return abort(HTTPStatus.NOT_IMPLEMENTED)

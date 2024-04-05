@@ -142,7 +142,7 @@ export const startChatRequest = (messages, prompt, cellSelection) => async (disp
       : Array.from(cellSelection);
 
     const pload = {
-      messages: newMessages,  // TODO might need to add <image> to first message
+      messages: newMessages,
       cellSelection: { filter: { obs: { index: cellSelection } } },
     };
 
@@ -205,6 +205,50 @@ export const startChatRequest = (messages, prompt, cellSelection) => async (disp
     dispatch({ type: "chat request failure", payload: error.message });
   }
 };
+
+/*
+  Send feedback to the LLM service
+*/
+export const chatFeedback = (messages, cellSelection, thumbDirection) => async (dispatch) => {
+  // dispatch({ type: "some request start", newMessages });  optionally enable later for feedback (request sent, or something)
+
+  try {
+    if (!cellSelection) cellSelection = [];
+
+    // These lines ensure that we convert any TypedArray to an Array.
+    // This is necessary because JSON.stringify() does some very strange
+    // things with TypedArrays (they are marshalled to JSON objects, rather
+    // than being marshalled as a JSON array).
+    cellSelection = Array.isArray(cellSelection)
+      ? cellSelection
+      : Array.from(cellSelection);
+
+    const pload = {
+      messages,
+      thumbDirection,
+      cellSelection: { filter: { obs: { index: cellSelection } } },
+    };
+
+    const response = await fetch(`${globals.API.prefix}${globals.API.version}llmembs/feedback`, {
+      method: 'POST',
+      headers: new Headers({
+        // Accept: "application/json",
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify(pload),
+    });
+
+    if (!response.ok) {
+      throw new Error("Error sending feedback to the model: " + response.statusText);
+    } else {
+      dispatch({ type: "chat feedback success" });  // TODO do something with this (e.g. convert the clicked thumb up to non-transparent)
+    }
+  } catch (error) {
+    dispatch({ type: "request llm embeddings error", payload: error.message });  // TODO refactor towards a general error message
+  }
+};
+
+
 
 /*
   Action creator to get score gene contributions

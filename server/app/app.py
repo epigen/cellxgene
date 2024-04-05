@@ -188,6 +188,13 @@ class LLMEmbeddingsChatAPI(Resource):
         return common_rest.llm_embeddings_chat_post(request, data_adaptor)
 
 
+class LLMEmbeddingsFeedbackAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_feedback_post(request, data_adaptor)
+
+
 class LLMEmbeddingsInterpretationAPI(Resource):
     @cache_control(no_store=True)
     @rest_get_data_adaptor
@@ -253,6 +260,7 @@ def get_api_dataroot_resources(bp_dataroot):
     add_resource(LLMEmbeddingsObsAPI, "/llmembs/obs")
     add_resource(LLMEmbeddingsTextAPI, "/llmembs/text")
     add_resource(LLMEmbeddingsChatAPI, "/llmembs/chat")
+    add_resource(LLMEmbeddingsFeedbackAPI, "/llmembs/feedback")
     add_resource(LLMEmbeddingsInterpretationAPI, "/llmembs/interpret")
     return api
 

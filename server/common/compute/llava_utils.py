@@ -41,41 +41,20 @@ def get_conv_log_filename():
 #     return models
 
 
-get_window_url_params = """
-function() {
-    const params = new URLSearchParams(window.location.search);
-    url_params = Object.fromEntries(params);
-    console.log(url_params);
-    return url_params;
-    }
-"""
+# We allow voting on all responses, but we always only return the messages until the voted one, so it is the last one here!
+def log_state(state, log_type, model_selector, **extra_log_fields):
+    # TODO store the floats in a space-efficient manner (e.g. don't use jsonl, but a native file format)
 
-
-def vote_last_response(state, vote_type, model_selector, request):
     with open(get_conv_log_filename(), "a") as fout:
         data = {
             "tstamp": round(time.time(), 4),
-            "type": vote_type,
             "model": model_selector,
+            "type": log_type,
             "state": state.dict(),
-            "ip": request.client.host,
+            **extra_log_fields,
         }
+
         fout.write(json.dumps(data) + "\n")
-
-
-def upvote_last_response(state, model_selector, request):
-    logger.info(f"upvote. ip: {request.client.host}")
-    vote_last_response(state, "upvote", model_selector, request)
-
-
-def downvote_last_response(state, model_selector, request):
-    logger.info(f"downvote. ip: {request.client.host}")
-    vote_last_response(state, "downvote", model_selector, request)
-
-
-def flag_last_response(state, model_selector, request):
-    logger.info(f"flag. ip: {request.client.host}")
-    vote_last_response(state, "flag", model_selector, request)
 
 
 def regenerate(state, image_process_mode, request):
@@ -107,7 +86,7 @@ def add_text(state, text, image=None, image_process_mode="Transcriptome"):
     state.append_message(state.roles[0], text)
 
 
-def http_bot(state, model_selector, temperature, top_p, max_new_tokens):
+def http_bot(state, model_selector, temperature, top_p, max_new_tokens, log=True):
     start_tstamp = time.time()
     model_name = model_selector
 
@@ -207,16 +186,6 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens):
     logger.info(f"{output}")
 
     state.messages[-1][-1] = output
-    with open(get_conv_log_filename(), "a") as fout:
-        data = {
-            "tstamp": round(finish_tstamp, 4),
-            "type": "chat",
-            "model": model_name,
-            "start": round(start_tstamp, 4),
-            "finish": round(finish_tstamp, 4),
-            "messages": state.messages,
-            "state": state.dict(),
-            # "images": all_image_hash,
-            # "ip": request.client.host,
-        }
-        fout.write(json.dumps(data) + "\n")
+
+    if log:
+        log_state(state, "request", model_name, start=round(start_tstamp, 4), finish=round(finish_tstamp, 4))

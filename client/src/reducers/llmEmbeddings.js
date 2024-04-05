@@ -4,7 +4,7 @@
 */
 const LLMEmbedding = (
   state = {
-    messages: "The LLM still primarily hallucinates. Please use its results with a good portion of scepticism (you will see yourself).",
+    messages: "The CellWhisperer LLM still heavily hallucinates. Please use its results with a good portion of scepticism and deliberately rate responses to help us improve model training 👍.\n👎 will generate a new response",
     loading: false,
   },
   action
