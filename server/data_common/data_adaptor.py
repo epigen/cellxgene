@@ -355,6 +355,10 @@ class DataAdaptor(metaclass=ABCMeta):
     def establish_llmembs_chat(self, data, obs_filter):
         pass
 
+    @abstractmethod
+    def llmembs_feedback(self, data, obs_filter):
+        pass
+
     @staticmethod
     def normalize_embedding(embedding):
         """Normalize embedding layout to meet client assumptions.

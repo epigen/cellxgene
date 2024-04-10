@@ -3,6 +3,9 @@ import { connect } from "react-redux";
 import { Button, InputGroup } from "@blueprintjs/core";
 import actions from "../../actions";
 
+const INITIAL_TEMPERATURE = 0.0;
+const REGENERATE_TEMPERATURE = 1.0;
+
 function renderList(items) {
   return (
     <ul>
@@ -24,6 +27,7 @@ class ChatSideBar extends React.Component {
     this.state = {
       inputText: "",
       conversationSample: null,
+      likedMessages: [],
     };
     this.messagesEndRef = React.createRef(); // Create a ref for the messages container
   }
@@ -47,10 +51,31 @@ class ChatSideBar extends React.Component {
     // Test if conversationSample changed
     if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels())) {
       submitMessages = [];
-      this.setState({ conversationSample: obsCrossfilter.allSelectedLabels() });
+      this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
     }
-    dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels()));
+    dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
     this.setState({ inputText: "" }); // Clear the input after sending
+  };
+
+  handleThumb = (messageId, thumbDirection) => {
+    const { dispatch, messages } = this.props;
+    const { inputText, conversationSample } = this.state;
+
+    // copy messages array and take all messages up to (including) messageId
+    const messagesCopy = messages.slice(0, messageId + 1);
+    dispatch(actions.chatFeedback(messagesCopy, conversationSample, thumbDirection));
+
+    // Regenerate response on negative feedback
+    // one caveat is that the user might have changed the selection, but we ignore that for now
+    if (thumbDirection === "down") {
+      let submitMessages = messagesCopy.slice(0, -1);
+      const userMessage = submitMessages.pop()["value"];
+      dispatch(actions.startChatRequest(submitMessages, userMessage, conversationSample, REGENERATE_TEMPERATURE));
+      // get rid of all liked messages with smaller index
+      this.setState({ likedMessages: this.state.likedMessages.filter((likedMessageId) => likedMessageId > messageId) });
+    } else {
+      this.setState({ likedMessages: [...this.state.likedMessages, messageId] });
+    }
   };
 
   geneContributionClicked = () => {
@@ -61,6 +86,7 @@ class ChatSideBar extends React.Component {
 
     // this.setState({ inputText: "" }); // Clear the input after sending
   };
+
 
   componentDidUpdate(prevProps) {
     if (prevProps.messages !== this.props.messages) {
@@ -73,6 +99,79 @@ class ChatSideBar extends React.Component {
       this.messagesEndRef.current.scrollTop = this.messagesEndRef.current.scrollHeight;
     }
   };
+
+  renderMessages() {
+    const { messages } = this.props;
+    const { likedMessages } = this.state;
+    return (
+      <div
+      >
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            style={{
+              display: 'flex',
+              justifyContent: message.from === "human" ? 'flex-end' : 'flex-start',
+              margin: "5px",
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: message.from === "human" ? "#96c03a" : "#bee3ef",
+                padding: "5px 10px",
+                borderRadius: "5px",
+                width: "90%", // Prevents the bubble from stretching too wide
+                justifyContent: "space-between",
+              }}
+            >
+              <span> {message.value} </span>
+              { message.from === "gpt" ?
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexDirection: 'column'
+                }}>
+                  <button
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: likedMessages.includes(index) ? "default" : "pointer",
+                      opacity: likedMessages.includes(index) ? 1 : 0.5,
+                      transition: "opacity 0.3s ease",
+                      padding: "3px 0px"
+                    }}
+                    onClick={likedMessages.includes(index) ? null : () => this.handleThumb(index, "up")}
+                    onMouseOver={likedMessages.includes(index) ? null : (e) => e.currentTarget.style.opacity = 1}
+                    onMouseOut={likedMessages.includes(index) ? null : (e) => e.currentTarget.style.opacity = 0.5}
+                  >
+                    👍
+                  </button>
+                  <button
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      opacity: 0.5,
+                      transition: "opacity 0.3s ease",
+                      padding: "3px"
+                    }}
+                    onClick={() => this.handleThumb(index, "down")}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                  >
+                    👎
+                  </button>
+                </div>
+                : null
+              }
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   render() {
     const { messages, loading, obsCrossfilter, enableGeneScoreContributions } = this.props;
@@ -100,38 +199,14 @@ class ChatSideBar extends React.Component {
             overflowY: "auto",
             padding: "5px 5px",
             margin: "5px 5px",
+            whiteSpace: "pre-wrap",
             flex: 1,
           }}
           ref={this.messagesEndRef} // Attach the ref to this div
         >
           {typeof messages === "string" ? (
             messages
-          ) : (
-            <div
-            >
-              {messages.map((message) => (
-                <div
-                  style={message.from == "human" ? {
-                    textAlign: "right",
-                    backgroundColor: "#96c03a",
-                    margin: "5px 5px",
-                    padding: "5px 5px",
-                    paddingLeft: "20px",
-                    borderRadius: "5px",
-                  } : {
-                    textAlign: "left",
-                    backgroundColor: "#bee3ef",
-                    margin: "5px 5px",
-                    padding: "5px 5px",
-                    paddingRight: "20px",
-                    borderRadius: "5px",
-                  }}
-                >
-                  {message.value}
-                </div>
-              ))}
-            </div>
-          )}
+          ) : this.renderMessages()}
         </div>
         <div
           style={{
@@ -178,7 +253,7 @@ class ChatSideBar extends React.Component {
               loading={loading}
               style={{ margin: "0px 10px", padding: "0px 20px" }}
             >
-              Interpret {obsCrossfilter.countSelected()} selected cells
+              Interpret selected pseudocell (mean of n={obsCrossfilter.countSelected()})
             </Button>
           }
           <Button
@@ -193,7 +268,7 @@ class ChatSideBar extends React.Component {
             {
               JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) ?
                 "Start new conversation" : "Continue conversation"
-            } about {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : obsCrossfilter.countSelected() + " selected"} cells
+            } about selected pseudocell (mean of {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : "n=" + obsCrossfilter.countSelected()})
           </Button>
         </div>
       </div>

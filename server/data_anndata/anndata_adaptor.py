@@ -380,7 +380,18 @@ class AnndataAdaptor(DataAdaptor):
         except (KeyError, IndexError):
             raise FilterError("Error parsing filter")
 
-        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask)
+        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask, temperature=data.get("temperature", 0.0))
+
+    def llmembs_feedback(self, data, obs_filter):
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.llm_feedback(self, data["messages"], obs_mask, data["thumbDirection"])
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)
