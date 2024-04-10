@@ -16,6 +16,7 @@ function renderList(items) {
 @connect((state) => ({
   ...state.llmEmbeddings,
   obsCrossfilter: state.obsCrossfilter,
+  enableGeneScoreContributions: state.config?.parameters?.["enable-llmembs_gene_score_contribution"] ?? false,
 }))
 class ChatSideBar extends React.Component {
   constructor(props) {
@@ -52,6 +53,15 @@ class ChatSideBar extends React.Component {
     this.setState({ inputText: "" }); // Clear the input after sending
   };
 
+  geneContributionClicked = () => {
+    const { dispatch, obsCrossfilter } = this.props;
+    const { inputText } = this.state;
+
+    dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
+
+    // this.setState({ inputText: "" }); // Clear the input after sending
+  };
+
   componentDidUpdate(prevProps) {
     if (prevProps.messages !== this.props.messages) {
       this.scrollToBottom();
@@ -65,7 +75,7 @@ class ChatSideBar extends React.Component {
   };
 
   render() {
-    const { messages, loading, obsCrossfilter } = this.props;
+    const { messages, loading, obsCrossfilter, enableGeneScoreContributions } = this.props;
     const { inputText, conversationSample } = this.state;
 
     return (
@@ -158,11 +168,24 @@ class ChatSideBar extends React.Component {
           >
             Find cells
           </Button>
+          { enableGeneScoreContributions &&
+            <Button
+              onClick={this.geneContributionClicked}
+              disabled={
+                obsCrossfilter.countSelected() === 0 ||
+                  !inputText
+              }
+              loading={loading}
+              style={{ margin: "0px 10px", padding: "0px 20px" }}
+            >
+              Interpret {obsCrossfilter.countSelected()} selected cells
+            </Button>
+          }
           <Button
             onClick={this.chatSelectedClick}
             disabled={
               obsCrossfilter.countSelected() === 0 ||
-              !inputText
+                !inputText
             }
             loading={loading}
             style={{ margin: "0px 10px", padding: "0px 20px" }}

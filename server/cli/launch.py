@@ -106,6 +106,13 @@ def config_args(func):
         help="Disable on-demand LLM-Embeddings services.",
     )
     @click.option(
+        "--enable-llmembs-gene-score-contribution",
+        is_flag=True,
+        default=DEFAULT_CONFIG.dataset_config.llmembs__gene_score_contribution_enable,
+        show_default=False,
+        help="Enable gene score contribution to LLM-Embeddings.",
+    )
+    @click.option(
         "--embedding",
         "-e",
         default=DEFAULT_CONFIG.dataset_config.embeddings__names,
@@ -334,6 +341,7 @@ def launch(
     backed,
     disable_diffexp,
     disable_llmembs,
+    enable_llmembs_gene_score_contribution,
     config_file,
     dump_default_config,
     x_approximate_distribution,
@@ -396,6 +404,7 @@ def launch(
             diffexp__enable=not disable_diffexp,
             diffexp__lfc_cutoff=diffexp_lfc_cutoff,
             llmembs__enable=not disable_llmembs,
+            llmembs__gene_score_contribution_enable=enable_llmembs_gene_score_contribution and (not disable_llmembs),
             llmembs__model_checkpoint=modelpath,
             X_approximate_distribution=x_approximate_distribution,
         )

@@ -280,4 +280,5 @@ export default {
   requestEmbeddingLLMWithCells:
     llmEmbeddingsActions.requestEmbeddingLLMWithCells,
   startChatRequest: llmEmbeddingsActions.startChatRequest,
+  geneContributionRequest: llmEmbeddingsActions.geneContributionRequest,
 };

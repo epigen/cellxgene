@@ -4,13 +4,18 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Union
 
 import requests
 import pickle
 import torch
 
-from cellwhisperer.utils.inference import score_transcriptomes_vs_texts, rank_terms_by_score, prepare_terms
+from cellwhisperer.utils.inference import (
+    score_transcriptomes_vs_texts,
+    rank_terms_by_score,
+    prepare_terms,
+    # gene_score_contributions,
+)
 import torch
 from cellwhisperer.utils.model_io import load_cellwhisperer_model
 from . import llava_utils, llava_conversation
@@ -18,6 +23,23 @@ from . import llava_utils, llava_conversation
 default_conversation = llava_conversation.conv_mistral_instruct
 
 logger = logging.getLogger(__name__)
+
+
+def gene_score_contributions(
+    transcriptome_input: torch.Tensor,
+    text_list_or_text_embeds: Union[List[str], torch.Tensor],
+    logit_scale: float,
+    score_norm_method: str = None,
+) -> pd.Series:
+    """
+    Just a dummy for testing
+    """
+    return pd.Series(
+        {
+            "Gene 1": 0.1,
+            "Gene 2": -0.1,
+        }
+    )
 
 
 class CellWhispererWrapper:
@@ -255,30 +277,29 @@ class CellWhispererWrapper:
         ):
             yield json.dumps({"text": chunk}).encode() + b"\x00"
 
-    def manual_request():
+    def gene_score_contributions(self, adaptor, prompt, mask) -> pd.Series:
         """
-        unused in favor of function borrowed from llava
-
+        Which genes increase or decrease the prompt-similiarity in the selected cells?
         """
-        # Construct the payload for the worker
-        pload = {
-            "model": model,
-            "prompt": prompt,
-            "temperature": temperature,
-            "top_p": top_p,
-            "max_new_tokens": max_new_tokens,
-            "images": [transcriptome_embeds],
-        }
 
-        # Get the worker address from the controller
-        worker_addr_response = requests.post(f"{controller_url}/get_worker_address", json={"model": model})
-        worker_addr = worker_addr_response.json()["address"]
-        print(worker_addr)
+        var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
+        obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
+        try:
+            transcriptomes = adaptor.data[mask].to_memory(copy=True)
+        except MemoryError:
+            raise
 
-        # Stream the response
-        with requests.post(
-            f"{worker_addr}/worker_generate_stream", headers={"User-Agent": "LLaVA Client"}, json=pload, stream=True
-        ) as r:
-            for chunk in r.iter_lines(delimiter=b"\x00"):
-                if chunk:
-                    yield chunk + b"\x00"
+        transcriptomes.var.index = adaptor.data.var[var_index_col_name].astype(str)
+        transcriptomes.obs.index = adaptor.data.obs.loc[mask, obs_index_col_name].astype(str)
+
+        text_embeds = self._embed_texts([prompt])
+
+        gene_contribs: pd.Series = gene_score_contributions(
+            transcriptome_input=transcriptomes,
+            text_list_or_text_embeds=text_embeds,
+            logit_scale=self.logit_scale,
+            score_norm_method=None,
+        ).sort_values()
+
+        top_bottom: pd.Series = pd.concat([gene_contribs.iloc[:10], gene_contribs.iloc[-10:]])  # type: ignore
+        return top_bottom
