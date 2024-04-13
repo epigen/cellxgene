@@ -36,24 +36,40 @@ class ChatSideBar extends React.Component {
     this.setState({ inputText: e.target.value });
   };
 
-  findCellsClick = () => {
-    const { dispatch } = this.props;
-    const { inputText } = this.state;
-    dispatch(actions.requestEmbeddingLLMWithText(inputText));
+  buttonDisabled = () => {
+    const { inputText, conversationSample } = this.state;
+    const { obsCrossfilter, loading } = this.props;
+    return (
+      inputText.length === 0 ||
+      (inputText.startsWith("/interpret") && !obsCrossfilter.countSelected()) ||
+      (inputText.startsWith("/search") && inputText.length <= "/search ".length) ||
+      loading
+    );
   };
 
-  chatSelectedClick = () => {
-    const { dispatch, obsCrossfilter, messages } = this.props;
+  inputSubmit = () => {
+    const { dispatch, obsCrossfilter, messages, enableGeneScoreContributions } = this.props;
     const { inputText, conversationSample } = this.state;
-    // Dispatch the action to send the message
-    let submitMessages = messages;
-
-    // Test if conversationSample changed
-    if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels())) {
-      submitMessages = [];
-      this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
+    if (this.buttonDisabled()) {
+      return;
     }
-    dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
+
+    if (inputText.startsWith("/search")) {
+      const search = inputText.replace("/search", "").trim();
+      dispatch(actions.requestEmbeddingLLMWithText(search));
+    } else if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
+      dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
+    } else {
+      // Dispatch the action to send the message
+      let submitMessages = messages;
+
+      // Test if conversationSample changed
+      if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels())) {
+        submitMessages = [];
+        this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
+      }
+      dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
+    }
     this.setState({ inputText: "" }); // Clear the input after sending
   };
 
@@ -78,16 +94,6 @@ class ChatSideBar extends React.Component {
     }
   };
 
-  geneContributionClicked = () => {
-    const { dispatch, obsCrossfilter } = this.props;
-    const { inputText } = this.state;
-
-    dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
-
-    // this.setState({ inputText: "" }); // Clear the input after sending
-  };
-
-
   componentDidUpdate(prevProps) {
     if (prevProps.messages !== this.props.messages) {
       this.scrollToBottom();
@@ -98,6 +104,27 @@ class ChatSideBar extends React.Component {
     if (this.messagesEndRef.current) {
       this.messagesEndRef.current.scrollTop = this.messagesEndRef.current.scrollHeight;
     }
+  };
+  buttonText = () => {
+    const { inputText, conversationSample } = this.state;
+    const { obsCrossfilter } = this.props;
+    let action;
+    if (inputText.startsWith("/search")) {
+      action = "Search";
+    } else {
+      if (inputText.startsWith("/interpret")) {
+        action = "Interpret";
+      }
+      else {
+        const allSelected = JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels());
+        action = allSelected ? "Chat" : "Continue chat";
+      }
+      const countSelected = obsCrossfilter.countSelected();
+      const totalObs = obsCrossfilter.annoMatrix.nObs;
+      const selectionLabel = countSelected === totalObs ? "all " + countSelected : "n=" + countSelected;
+      action = action + " about selected pseudocell (mean of " + selectionLabel + ")";
+    }
+    return action;
   };
 
   renderMessages() {
@@ -217,10 +244,10 @@ class ChatSideBar extends React.Component {
             value={inputText}
             fill
             onChange={this.handleInputChange}
-            placeholder="E.g. Describe the sample of selected cells..."
+            placeholder="E.g. '/search inflammation' or 'What do these cells do?'"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText) {
-                this.chatSelectedClick();
+              if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText && !loading) {
+                this.inputSubmit();
               }
             }}
           />
@@ -230,45 +257,16 @@ class ChatSideBar extends React.Component {
             margin: "5px 5px",
             display: "flex",
             flexDirection: "row",
-            justifyContent: "space-between",
+            justifyContent: "right",
           }}
         >
           <Button
-            onClick={this.findCellsClick}
-            disabled={!inputText}
-            active={true}  // reflect that "enter" presses this one
-            // autoFocus={true} // does not work, because focus needs to be on input field
-            loading={loading}
-            style={{ margin: "0px 0px", padding: "0px 20px" }}
-          >
-            Find cells
-          </Button>
-          { enableGeneScoreContributions &&
-            <Button
-              onClick={this.geneContributionClicked}
-              disabled={
-                obsCrossfilter.countSelected() === 0 ||
-                  !inputText
-              }
-              loading={loading}
-              style={{ margin: "0px 10px", padding: "0px 20px" }}
-            >
-              Interpret selected pseudocell (mean of n={obsCrossfilter.countSelected()})
-            </Button>
-          }
-          <Button
             onClick={this.chatSelectedClick}
-            disabled={
-              obsCrossfilter.countSelected() === 0 ||
-                !inputText
-            }
+            disabled={this.buttonDisabled()}
             loading={loading}
             style={{ margin: "0px 10px", padding: "0px 20px" }}
           >
-            {
-              JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) ?
-                "Start new conversation" : "Continue conversation"
-            } about selected pseudocell (mean of {obsCrossfilter.countSelected() === obsCrossfilter.annoMatrix.nObs ? "all " + obsCrossfilter.countSelected() : "n=" + obsCrossfilter.countSelected()})
+            {this.buttonText()}
           </Button>
         </div>
       </div>

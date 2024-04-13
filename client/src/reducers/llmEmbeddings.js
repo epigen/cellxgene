@@ -4,7 +4,7 @@
 */
 const LLMEmbedding = (
   state = {
-    messages: "The CellWhisperer LLM still heavily hallucinates. Please use its results with a good portion of scepticism and deliberately rate responses to help us improve model training 👍.\n👎 will generate a new response",
+    messages: "Welcome to CellWhisperer! This Mini-Guide will get you started:\n\n-  Type \"/search ...\" to search for cells\n-  Select your cells of interest and start a conversation\n-  CellWhisperer may produce misleading and incorrect results.\n    -  Use it as hypothesis generator rather than as ground truth\n\n\nHelp us improve it: 👎 will generate a new response. If the response improved, please indicate so 👍",
     loading: false,
   },
   action
