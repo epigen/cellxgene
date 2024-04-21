@@ -70,7 +70,7 @@ dataset:
   llmembs:
     enable: true
     gene_score_contribution_enable: false
-    model_checkpoint: ~/cellwhisperer/results/models/jointemb/03jujd8s.ckpt
+    model_checkpoint: ~/cellwhisperer/results/models/jointemb/cellwhisperer_clip_v1.ckpt
   X_approximate_distribution: auto
 
 external:
