@@ -170,13 +170,14 @@ class ChatSideBar extends React.Component {
                       border: "none",
                       background: "transparent",
                       cursor: likedMessages.includes(index) ? "default" : "pointer",
-                      opacity: likedMessages.includes(index) ? 1 : 0.5,
+                      opacity: likedMessages.includes(index) ? 1 : 0.7,
                       transition: "opacity 0.3s ease",
-                      padding: "3px 0px"
+                      padding: "3px 0px",
+                      fontSize: "12pt"
                     }}
                     onClick={likedMessages.includes(index) ? null : () => this.handleThumb(index, "up")}
                     onMouseOver={likedMessages.includes(index) ? null : (e) => e.currentTarget.style.opacity = 1}
-                    onMouseOut={likedMessages.includes(index) ? null : (e) => e.currentTarget.style.opacity = 0.5}
+                    onMouseOut={likedMessages.includes(index) ? null : (e) => e.currentTarget.style.opacity = 0.7}
                   >
                     👍
                   </button>
@@ -185,13 +186,14 @@ class ChatSideBar extends React.Component {
                       border: "none",
                       background: "transparent",
                       cursor: "pointer",
-                      opacity: 0.5,
+                      opacity: 0.7,
                       transition: "opacity 0.3s ease",
-                      padding: "3px"
+                      padding: "3px",
+                      fontSize: "12pt"
                     }}
                     onClick={() => this.handleThumb(index, "down")}
                     onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.7}
                   >
                     👎
                   </button>
