@@ -40,7 +40,6 @@ class ChatSideBar extends React.Component {
     const { inputText, conversationSample } = this.state;
     const { obsCrossfilter, loading } = this.props;
     return (
-      inputText.length === 0 ||
       (inputText.startsWith("/interpret") && !obsCrossfilter.countSelected()) ||
       (inputText.startsWith("/search") && inputText.length <= "/search ".length) ||
       loading
@@ -63,12 +62,13 @@ class ChatSideBar extends React.Component {
       // Dispatch the action to send the message
       let submitMessages = messages;
 
+
       // Test if conversationSample changed
-      if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels())) {
+      if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) || inputText === "") {
         submitMessages = [];
         this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
       }
-      dispatch(actions.startChatRequest(submitMessages, inputText, obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
+      dispatch(actions.startChatRequest(submitMessages, inputText || "Describe the selected cells.", obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
     }
     this.setState({ inputText: "" }); // Clear the input after sending
   };
@@ -107,22 +107,27 @@ class ChatSideBar extends React.Component {
   };
   buttonText = () => {
     const { inputText, conversationSample } = this.state;
-    const { obsCrossfilter } = this.props;
+    const { obsCrossfilter, enableGeneScoreContributions } = this.props;
+
     let action;
     if (inputText.startsWith("/search")) {
-      action = "Search";
+      action = "Search for cells";
     } else {
-      if (inputText.startsWith("/interpret")) {
+      if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
         action = "Interpret";
       }
-      else {
-        const allSelected = JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels());
-        action = allSelected ? "Chat" : "Continue chat";
+      else if (inputText == "") {
+        action = "Describe";
       }
+      else {
+        const isNewSelection = JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels());
+        action = isNewSelection ? "Chat about" : "Continue chat about";
+      }
+
       const countSelected = obsCrossfilter.countSelected();
       const totalObs = obsCrossfilter.annoMatrix.nObs;
       const selectionLabel = countSelected === totalObs ? "all " + countSelected : "n=" + countSelected;
-      action = action + " about selected pseudocell (mean of " + selectionLabel + ")";
+      action = action + " the selected pseudocell (mean of " + selectionLabel + ")";
     }
     return action;
   };
@@ -244,7 +249,7 @@ class ChatSideBar extends React.Component {
             value={inputText}
             fill
             onChange={this.handleInputChange}
-            placeholder="E.g. '/search inflammation' or 'What do these cells do?'"
+            placeholder="Type your request here and press <Enter>. For example: '/search T cells'"
             onKeyDown={(e) => {
               if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText && !loading) {
                 this.inputSubmit();
@@ -261,7 +266,7 @@ class ChatSideBar extends React.Component {
           }}
         >
           <Button
-            onClick={this.chatSelectedClick}
+            onClick={this.inputSubmit}
             disabled={this.buttonDisabled()}
             loading={loading}
             style={{ margin: "0px 10px", padding: "0px 20px" }}
