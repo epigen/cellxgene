@@ -224,37 +224,14 @@ class CellWhispererWrapper:
         # Extract necessary information from the request
         transcriptome_embeds = adaptor.data.obsm["transcriptome_embeds"][mask].mean(axis=0).tolist()
 
-        if mask.sum() > 2000:
-            logging.warning("Too many cells to process, sampling 2k cells")
-
-            np.random.seed(42)
-
-            selected_indices = np.random.choice(np.where(mask)[0], 2000, replace=False)
-            mask = np.zeros(adaptor.data.shape[0], dtype=bool)
-            mask[selected_indices] = True
-
-        mean_transcriptome = adaptor.data.X[mask,].mean(axis=0)
-        try:
-            # read it out from sparse matrix
-            mean_transcriptome = mean_transcriptome.A1
-        except AttributeError:
-            pass
-
-        # Compute top genes
-        try:
-            mean_normalized_transcriptome = (
-                mean_transcriptome - adaptor.data.var["log1p_normalizer"].to_numpy()
-            )  # normalize in logspace via difference
-        except KeyError:
-            logging.warning("No log1p_normalizer found in var. Using unnormalized log1ps to compute top genes")
-            mean_normalized_transcriptome = mean_transcriptome
-
-        n_top_genes = 20  # TODO needs to become config
-        top_genes = (
-            pd.Series(data=mean_normalized_transcriptome, index=adaptor.data.var.gene_name)
-            .nlargest(n_top_genes)
-            .index.tolist()
-        )
+        # Heuristic to get the top genes efficiently (computing it is infeasible, due to the (recommended) use of CSC matrices)
+        # Equivalent to slower `pd.Series(df.values.ravel()).value_counts()`
+        top_genes_df = adaptor.data.obsm["top_genes"][mask]
+        codes = np.concatenate([top_genes_df[col].cat.codes.values for col in top_genes_df.columns])
+        counts = np.bincount(codes, minlength=len(top_genes_df["Top_1"].cat.categories))
+        category_counts = pd.Series(counts, index=top_genes_df[top_genes_df.columns[0]].cat.categories)
+        n_top_genes = 50  # TODO number of top genes to list needs to become configurable
+        top_genes = category_counts.sort_values(ascending=False).index[:n_top_genes].to_list()
 
         # Initialize the conversation
         state = default_conversation.copy()
@@ -263,11 +240,11 @@ class CellWhispererWrapper:
         state.messages = [
             [
                 "USER",
-                f"Help me analyzing this sample of cells. Always respond in proper english sentences and in a tone of uncertainty. Start by listing the top {n_top_genes} genes.",
+                f"Help me analyzing this sample of cells. Respond in proper english in a tone of uncertainty and focus on the biology of the sample rather than any potential donor or patient information (e.g. do not mention age and sex). Start by listing the top {n_top_genes} genes.",
             ],
             [
                 "ASSISTANT",
-                f"Sure, It looks like the top normalized genes are {', '.join(top_genes)}.",
+                f"Sure. The 20 top normalized genes are {', '.join(top_genes[:20])}.\nStill remarkably strong expressed are {', '.join(top_genes[20:n_top_genes])}. Note that there are even more strongly expressed genes beyond the ones I just listed.",
             ],
         ]
         state.offset = 2
