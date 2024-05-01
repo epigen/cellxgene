@@ -7,8 +7,6 @@ import {
   createColorTable,
   createColorQuery,
 } from "../../util/stateManager/colorHelpers";
-// Define your fixed domain
-const FIXED_DOMAIN = [-3, 3];
 
 // create continuous color legend
 const continuous = (selectorId, colorScale, colorAccessor) => {
@@ -40,7 +38,10 @@ const continuous = (selectorId, colorScale, colorAccessor) => {
   const legendScale = d3
     .scaleLinear()
     .range([1, legendHeight - margin.top - margin.bottom])
-    .domain(FIXED_DOMAIN); /* we flip this to make viridis colors dark if high in the color scale */
+    .domain([
+      colorScale.domain()[1],
+      colorScale.domain()[0],
+    ]); /* we flip this to make viridis colors dark if high in the color scale */
 
   // image data hackery based on http://bl.ocks.org/mbostock/048d21cf747371b11884f75ad896e5a5
   const image = ctx.createImageData(1, legendHeight);
@@ -134,18 +135,22 @@ class ContinuousLegend extends React.Component {
         userColors
       );
 
-
-      const colorScale = d3.scaleSequential(interpolateCool).domain(FIXED_DOMAIN);
+      const colorScale = colorTable.scale;
+      const range = colorScale?.range;
+      const [domainMin, domainMax] = colorScale?.domain?.() ?? [0, 0];
 
       /* always remove it, if it's not continuous we don't put it back. */
       d3.select("#continuous_legend").selectAll("*").remove();
 
-      if (colorAccessor && colorScale) {
-        continuous(
-          "#continuous_legend",
-          colorScale,
-          colorAccessor
-        );
+      if (colorAccessor && colorScale && range && domainMin < domainMax) {
+        /* fragile! continuous range is 0 to 1, not [#fa4b2c, ...], make this a flag? */
+        if (range()[0][0] !== "#") {
+          continuous(
+            "#continuous_legend",
+            d3.scaleSequential(interpolateCool).domain(colorScale.domain()),
+            colorAccessor
+          );
+        }
       }
     }
   }
