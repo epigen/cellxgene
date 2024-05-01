@@ -119,6 +119,15 @@ class AnndataAdaptor(DataAdaptor):
                 # previously specified index.
                 df_axis.rename_axis(name, inplace=True)
                 df_axis.reset_index(inplace=True)
+                # convert index to str (anndata wants it like this)
+                df_axis.index = df_axis.index.astype(str)
+                for value in getattr(self.data, f"{ax_name}m").values():
+                    try:
+                        value.reset_index(inplace=True, drop=True)
+                        # convert index to str
+                        value.index = value.index.astype(str)
+                    except AttributeError:
+                        pass
             elif name in df_axis.columns:
                 # User has specified alternative column for unique names, and it exists
                 if not df_axis[name].is_unique:
@@ -126,6 +135,13 @@ class AnndataAdaptor(DataAdaptor):
                         f"Values in {ax_name}.{name} must be unique. " "Please prepare data to contain unique values."
                     )
                 df_axis.reset_index(drop=True, inplace=True)
+                df_axis.index = df_axis.index.astype(str)
+                for value in getattr(self.data, f"{ax_name}m").values():
+                    try:
+                        value.reset_index(drop=True, inplace=True)
+                        value.index = value.index.astype(str)
+                    except AttributeError:
+                        pass
                 self.parameters[parameter_name] = name
             else:
                 # user specified a non-existent column name
