@@ -83,7 +83,7 @@ export const leftSidebarSectionHeading = {
   letterSpacing: ".05em",
 };
 export const leftSidebarSectionPadding = 10;
-export const categoryLabelDisplayStringLongLength = 27;
+export const categoryLabelDisplayStringLongLength = 70;
 export const categoryLabelDisplayStringShortLength = 11;
 export const categoryDisplayStringMaxLength = 33;
 

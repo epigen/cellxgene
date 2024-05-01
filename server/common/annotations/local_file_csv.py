@@ -181,9 +181,17 @@ class AnnotationsLocalFile(Annotations):
         """
         Return a short hash that weakly identifies the user and dataset.
         Used to create safe annotations output file names.
+
+        When using docker, location is always '/dataset.h5ad', therefore date and filesize is added to the ID
         """
         uid = get_user_id(session)
-        id = (uid + data_adaptor.get_location()).encode()
+        file_id = (  #
+            data_adaptor.get_location()
+            + data_adaptor.get_last_mod_time().isoformat()
+            + str(data_adaptor.get_data_locator().size())
+        )
+
+        id = (uid + file_id).encode()
         idhash = base64.b32encode(blake2b(id, digest_size=5).digest()).decode("utf-8")
         return idhash
 
@@ -269,7 +277,9 @@ class AnnotationsLocalFile(Annotations):
         params["annotations"] = self.user_annotations_enabled()
         params["annotations_genesets_readonly"] = not self.gene_sets_save_enabled()
         params["annotations_genesets_name_is_read_only"] = self.gene_sets_output_file is not None
-        params["user_annotation_collection_name_enabled"] = True
+        params[
+            "user_annotation_collection_name_enabled"
+        ] = True  # By setting the name below, the UI doesn't ask anymore
 
         if self.label_output_file is not None:
             # user has hard-wired the name of the annotation cell label data collection
@@ -279,8 +289,10 @@ class AnnotationsLocalFile(Annotations):
             params["annotations-data-collection-name"] = collection_fname
 
         elif session is not None:
-            collection = self.get_collection()
             params["annotations-data-collection-is-read-only"] = not self.user_annotations_enabled()
+            collection = self.get_collection()
+            if collection is None:
+                collection = "default"  # avoid asking user for collection name
             params["annotations-data-collection-name"] = collection
 
         params["annotations-user-data-idhash"] = self._get_userdata_idhash(data_adaptor)
