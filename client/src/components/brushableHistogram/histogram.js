@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { interpolateCool } from "d3-scale-chromatic";
 import * as d3 from "d3";
 
 import maybeScientific from "../../util/maybeScientific";
@@ -16,6 +15,7 @@ const Histogram = ({
   onBrushEnd,
   margin,
   isColorBy,
+  interpolateFn,
   selectionRange,
   mini,
 }) => {
@@ -49,8 +49,9 @@ const Histogram = ({
       .attr("class", "histogram-container")
       .attr("transform", `translate(${marginLeft},${marginTop})`);
 
+
     const colorScale = d3
-      .scaleSequential(interpolateCool)
+      .scaleSequential(interpolateFn)
       .domain([0, bins.length]);
 
     const histogramScale = d3

@@ -81,6 +81,7 @@ const saveOnActions = new Set([
   "color by continuous metadata",
   "color by expression",
   "color by geneset mean expression",
+  "color by cellwhisperer search",
 
   "show centroid labels for category",
 
