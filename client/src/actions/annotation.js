@@ -51,7 +51,6 @@ export const annotationCreateContinuousAction =
       values
     );
 
-    // TODO this is probably a noop (and should be removed)
     dispatch({
       type: "annotation: create continuous",
       data: newContinuousName,
@@ -60,7 +59,7 @@ export const annotationCreateContinuousAction =
     });
 
     dispatch({
-      type: "color by continuous metadata",
+      type: "color by cellwhisperer search",
       colorAccessor: newContinuousName,
     });
   };

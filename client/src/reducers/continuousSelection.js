@@ -1,6 +1,8 @@
 import { makeContinuousDimensionName } from "../util/nameCreators";
 
-const ContinuousSelection = (state = {}, action) => {
+const ContinuousSelection = (state = {
+  cellwhispererSearches: []
+}, action) => {
   switch (action.type) {
     case "reset subset":
     case "subset to selection":
@@ -17,6 +19,14 @@ const ContinuousSelection = (state = {}, action) => {
       return {
         ...state,
         [name]: action.range,
+      };
+    }
+    // The continuous field is created elsewhere. Here, we just store the name
+    case "annotation: create continuous": {
+      const name = action.data;
+      return {
+        ...state,
+        cellwhispererSearches: [...state.cellwhispererSearches, name]
       };
     }
     case "continuous metadata histogram cancel": {

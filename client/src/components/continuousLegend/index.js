@@ -1,7 +1,6 @@
 import React from "react";
 import { connect } from "react-redux";
 import * as d3 from "d3";
-import { interpolateCool } from "d3-scale-chromatic";
 
 import {
   createColorTable,
@@ -136,6 +135,7 @@ class ContinuousLegend extends React.Component {
       );
 
       const colorScale = colorTable.scale;
+      const colorInterpolateFn = colorTable.interpolateFn;
       const range = colorScale?.range;
       const [domainMin, domainMax] = colorScale?.domain?.() ?? [0, 0];
 
@@ -147,7 +147,7 @@ class ContinuousLegend extends React.Component {
         if (range()[0][0] !== "#") {
           continuous(
             "#continuous_legend",
-            d3.scaleSequential(interpolateCool).domain(colorScale.domain()),
+            d3.scaleSequential(colorInterpolateFn).domain(colorScale.domain()),
             colorAccessor
           );
         }
