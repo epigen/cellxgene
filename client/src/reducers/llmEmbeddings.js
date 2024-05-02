@@ -6,6 +6,7 @@ const LLMEmbedding = (
   state = {
     messages: "Welcome to CellWhisperer! To get started, please try some of the following options:\n\n1. Highlight your cells of interest, e.g. by typing \"/search NK cells\" or \"/search inflammation\" in the text box below\n\n2. Select a group of cells, either by drawing a line around them, or via the search term histogram on the bottom left. Then, press the “Describe the selected pseudocell” button.\n\n3. Enter questions about your selected cells into the chat box, for example \"What distinguishes these cells from macrophages?\"\n\n4. You can also ask general questions, for example \"What is the role of IL-2R in natural killer cells?\"\n\n5. If a comment does not make sense to you, you can press the 👎 icon, and CellWhisperer will generate a new response.\n\n6. You can help us improve CellWhisperer by pressing the 👍 icon for answers that appear to be correct and useful.\n\n \n\nPlease keep in mind that CellWhisperer is an AI system and may produce incorrect or misleading results. CellWhisperer is best used as a tool for data exploration and hypothesis generation.",
     loading: false,
+    cellwhispererSearches: []
   },
   action
 ) => {
@@ -79,6 +80,14 @@ const LLMEmbedding = (
         messages: state.messages.slice(0, -1).concat({ value: `ERROR: ${action.payload}`, from: "gpt" }),
         loading: false,
         // error: action.payload, // Error message
+      };
+    }
+
+    case "annotation: create continuous": {
+      const name = action.data;
+      return {
+        ...state,
+        cellwhispererSearches: [...state.cellwhispererSearches, name]
       };
     }
 

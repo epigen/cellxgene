@@ -224,7 +224,7 @@ function _createColorsByContinuousMetadata(data, min, max) {
 
 function _createColorsByCellwhispererSearch(data, min, max) {
   const colorBins = 100;
-  let negativeBins = colorBins;
+  let negativeBins = 0;
   let positiveBins = 0;
   let interval, start, end;
   const colors = new Array(colorBins);
@@ -251,8 +251,8 @@ function _createColorsByCellwhispererSearch(data, min, max) {
   // positiveBins correspond to the range [0.5, 1.0] and negativeBins to the range [0.0, 0.5]. however, the number of bins needs to flip, due to the reverted color scale
   if (positiveBins < negativeBins) {
     interval = 0.5 / negativeBins;
-    start = 0.5 - (interval * negativeBins);
-    end = 1.0;
+    start = 0.5 - (interval * positiveBins);
+    end = 1.0;  // neg end
   } else {
     interval = 0.5 / positiveBins;
     start = 0.0;

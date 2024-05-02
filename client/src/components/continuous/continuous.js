@@ -6,7 +6,7 @@ import HistogramBrush from "../brushableHistogram";
 
 @connect((state) => ({
   schema: state.annoMatrix?.schema,
-  cellwhispererSearches: state.continuousSelection.cellwhispererSearches
+  cellwhispererSearches: state.llmEmbeddings.cellwhispererSearches
 }))
 class Continuous extends React.PureComponent {
   render() {
