@@ -236,23 +236,22 @@ class MenuBar extends React.PureComponent {
           undoDisabled={undoDisabled}
           redoDisabled={redoDisabled}
         />
-        {/* currently fails unfortunately */}
-        {/* <Clip */}
-        {/*   pendingClipPercentiles={pendingClipPercentiles} */}
-        {/*   clipPercentileMin={clipPercentileMin} */}
-        {/*   clipPercentileMax={clipPercentileMax} */}
-        {/*   handleClipOpening={this.handleClipOpening} */}
-        {/*   handleClipClosing={this.handleClipClosing} */}
-        {/*   handleClipCommit={this.handleClipCommit} */}
-        {/*   isClipDisabled={this.isClipDisabled} */}
-        {/*   handleClipOnKeyPress={this.handleClipOnKeyPress} */}
-        {/*   handleClipPercentileMaxValueChange={ */}
-        {/*     this.handleClipPercentileMaxValueChange */}
-        {/*   } */}
-        {/*   handleClipPercentileMinValueChange={ */}
-        {/*     this.handleClipPercentileMinValueChange */}
-        {/*   } */}
-        {/* /> */}
+        <Clip
+          pendingClipPercentiles={pendingClipPercentiles}
+          clipPercentileMin={clipPercentileMin}
+          clipPercentileMax={clipPercentileMax}
+          handleClipOpening={this.handleClipOpening}
+          handleClipClosing={this.handleClipClosing}
+          handleClipCommit={this.handleClipCommit}
+          isClipDisabled={this.isClipDisabled}
+          handleClipOnKeyPress={this.handleClipOnKeyPress}
+          handleClipPercentileMaxValueChange={
+            this.handleClipPercentileMaxValueChange
+          }
+          handleClipPercentileMinValueChange={
+            this.handleClipPercentileMinValueChange
+          }
+        />
         <Tooltip
           content="When a category is colored by, show labels on the graph"
           position="bottom"
