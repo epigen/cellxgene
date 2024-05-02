@@ -426,7 +426,7 @@ def llm_embeddings_text_post(request, data_adaptor):
 
         # compute a string-like hash and take the first 5 characters
 
-        annotation_name = f"{llm_embeddings_text_post.counter}_{text.replace(' ', '_')[:20]}"
+        annotation_name = f"{llm_embeddings_text_post.counter}_{text.replace(' ', '_')[:20]}"  # TODO could be used for HTML injection? replace more stuff
         llm_embeddings_text_post.counter += 1
 
         labels.name = annotation_name

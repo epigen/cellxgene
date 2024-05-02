@@ -431,7 +431,9 @@ class HistogramBrush extends React.PureComponent {
                   <HistogramFooter
                     isGeneSetSummary={isGeneSetSummary}
                     isObs={isObs}
-                    displayName={field}
+                    displayName={isCellwhisperer ?
+                                 field.split('_').slice(1).join(' ') :
+                                 field}
                     hideRanges={asyncProps.isSingleValue}
                     rangeMin={asyncProps.unclippedRange[0]}
                     rangeMax={asyncProps.unclippedRange[1]}

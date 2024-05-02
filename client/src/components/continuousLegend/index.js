@@ -98,7 +98,7 @@ const continuous = (selectorId, colorScale, colorAccessor) => {
     .attr("x", 0 - legendHeight / 2)
     .attr("dy", "1em")
     .attr("data-testid", "continuous_legend_color_by_label")
-    .attr("aria-label", colorAccessor)
+    .attr("aria-label", colorAccessor)  // I hope this works even though I pass it the formatted name
     .style("text-anchor", "middle")
     .style("fill", "white")
     .text(colorAccessor);
@@ -148,7 +148,9 @@ class ContinuousLegend extends React.Component {
           continuous(
             "#continuous_legend",
             d3.scaleSequential(colorInterpolateFn).domain(colorScale.domain()),
-            colorAccessor
+            colorMode == "color by cellwhisperer search" ?
+              colorAccessor.split('_').slice(1).join(' ') :
+              colorAccessor
           );
         }
       }
