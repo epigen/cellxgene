@@ -50,11 +50,11 @@ class CellWhispererWrapper:
         Load the model from the given path or use it via the given URL
         """
         if os.path.exists(model_path_or_url):
-            logging.info("Loading LLM embedding model...")
+            logger.info("Loading LLM embedding model...")
             self.pl_model, self.tokenizer, self.transcriptome_processor = load_cellwhisperer_model(
                 model_path_or_url, cache=True
             )
-            logging.info("Loading done")
+            logger.info("Loading done")
             self.logit_scale = self.pl_model.model.discriminator.temperature.exp()
         else:
             self.pl_model = None
@@ -70,7 +70,7 @@ class CellWhispererWrapper:
 
         adaptor: Access to the adata object
         """
-        logging.info("Preprocessing data for LLM embeddings, making sure it's fast")
+        logger.info("Preprocessing data for LLM embeddings, making sure it's fast")
         return  # just for testing
 
         # Make sure that all the zero-shot class terms are embedded
@@ -165,6 +165,7 @@ class CellWhispererWrapper:
         """
         Embed the given text into the LLM space and return the similarity of each cell to the text. The similarity will be used as new cell-level annotation
         """
+        logger.info(f"Search request: {text}")
         # Converts an obs index of "0", "1", ... to "TTTGCATGAGAGGC-1", ...
         obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
         var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
@@ -212,7 +213,7 @@ class CellWhispererWrapper:
                 # Deserialize the response data
                 text_embeds = torch.from_numpy(pickle.loads(response.content))
             else:
-                logging.warning(f"Request failed with status code {response.status_code}, {response.content}")
+                logger.warning(f"Request failed with status code {response.status_code}, {response.content}")
                 raise RuntimeError(f"Request to model API failed: {response.status_code}")
         else:
             assert self.pl_model is not None, "Model is not loaded, but querying API for text embedding failed as well"

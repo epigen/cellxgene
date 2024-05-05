@@ -21,8 +21,7 @@ sys.path.append(SERVERDIR)
 
 try:
     from server.app.app import Server
-
-    # from server.app.logging import configure_logging
+    from server.app.logging import configure_logging
     from server.common.config.app_config import AppConfig
     from server.common.utils.data_locator import DataLocator, discover_s3_region_name
 except Exception:
@@ -150,7 +149,7 @@ class WSGIServer(Server):
 
 
 try:
-    # configure_logging()
+    configure_logging()
 
     # config file: second, use the CXG_CONFIG_FILE
     config_file = os.getenv("CXG_CONFIG_FILE")
