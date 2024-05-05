@@ -1,11 +1,24 @@
 import yaml
 from flatten_dict import unflatten
+import logging
+import copy
+from flatten_dict import flatten as _flatten
+from flatten_dict import unflatten as _unflatten
+from envyaml import EnvYAML
 
 from server.default_config import get_default_config
 from server.common.config.dataset_config import DatasetConfig
 from server.common.config.server_config import ServerConfig
 from server.common.config.external_config import ExternalConfig
 from server.common.errors import ConfigurationError
+
+
+def flatten(dictionary: dict) -> dict:
+    return _flatten(dictionary, reducer=lambda parent, key: f"{parent}__{key}" if parent else key)
+
+
+def unflatten(dictionary: dict) -> dict:
+    return _unflatten(dictionary, splitter=lambda x: x.split("__"))
 
 
 class AppConfig(object):
@@ -18,7 +31,7 @@ class AppConfig(object):
     AppConfig has methods to initialize, modify, and access the configuration.
     """
 
-    def __init__(self):
+    def __init__(self, config_file_path: str = None):
         # the default configuration (see default_config.py)
         # TODO @madison -- if we always read from the default config (hard coded path) can we set those values as
         #  defaults within the config class?
@@ -29,6 +42,9 @@ class AppConfig(object):
         self.dataset_config = DatasetConfig(None, self, self.default_config["dataset"])
         #  external config
         self.external_config = ExternalConfig(self, self.default_config["external"])
+
+        if config_file_path:
+            self.update_from_config_file(config_file_path)
 
         # Set to true when config_completed is called
         self.is_completed = False
@@ -51,6 +67,45 @@ class AppConfig(object):
     def update_dataset_config(self, **kw):
         self.dataset_config.update(**kw)
         self.is_complete = False
+
+    def update_config(self, **kw):
+        """
+        Update multiple configuration parameters.
+        The key in kw should be a string using {parent}__{child}... when modifying nested configuration parameters.
+        """
+        updates = unflatten(kw)
+        config = copy.deepcopy(self.config)
+
+        # handle dataroots as special case since the naming of keys are user defined.
+        dataroots_updates = dict(
+            dataroot=updates.get("server", {}).get("multi_dataset", {}).pop("dataroot", ""),
+            dataroots=updates.get("server", {}).get("multi_dataset", {}).pop("dataroots", {}),
+        )
+        if any(list(dataroots_updates.values())):
+            # dataroots are completely replaced if provided.
+            config["server"]["multi_dataset"].update(**dataroots_updates)
+
+        updates = flatten(updates)
+        config = flatten(config)
+        config.update(**updates)
+        new_config = unflatten(config)
+        self.config = self.check_config(new_config)
+        self.dataroot_config = copy.deepcopy(
+            {key: value for key, value in self.server__multi_dataset__dataroots.items()}
+        )
+        for value in self.dataroot_config.values():
+            value = value.update(**new_config["dataset"])
+        self.is_completed = False
+        logging.info("Configuration updated")
+
+    def update_from_config_file(self, config_file: str):
+        try:
+            config = EnvYAML(config_file)
+        except yaml.YAMLError as e:
+            raise ConfigurationError(f"The specified config file contained an error: {e}") from None
+        except OSError as e:
+            raise ConfigurationError(f"Issue retrieving the specified config file: {e}") from None
+        self.update_config(**config)
 
     def update_single_config_from_path_and_value(self, path, value):
         """Update a single config parameter with the value.
