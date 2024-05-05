@@ -244,7 +244,7 @@ class CellWhispererWrapper:
             ],
             [
                 "ASSISTANT",
-                f"Sure. The 20 top normalized genes are {', '.join(top_genes[:20])}.\nStill remarkably strong expressed are {', '.join(top_genes[20:n_top_genes])}. Note that there are even more strongly expressed genes beyond the ones I just listed.",
+                f"Sure. I'll respond as you requested, focusing on the sample of cells and avoiding any personal information. It looks like the 20 top normalized genes are {', '.join(top_genes[:20])}.\nStill remarkably strong expressed seem the genes {', '.join(top_genes[20:n_top_genes])}. Note that there are even more strongly expressed genes beyond the ones I just listed.",
             ],
         ]
         state.offset = 2

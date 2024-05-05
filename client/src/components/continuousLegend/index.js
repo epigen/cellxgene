@@ -100,7 +100,7 @@ const continuous = (selectorId, colorScale, colorAccessor) => {
     .attr("data-testid", "continuous_legend_color_by_label")
     .attr("aria-label", colorAccessor)  // I hope this works even though I pass it the formatted name
     .style("text-anchor", "middle")
-    .style("fill", "white")
+    .style("fill", "black")
     .text(colorAccessor);
 };
 

@@ -251,7 +251,7 @@ class ChatSideBar extends React.Component {
             value={inputText}
             fill
             onChange={this.handleInputChange}
-            placeholder="Type your request here and press <Enter>. For example: '/search T cells'"
+            placeholder="Type your request here and press <Enter>. For example: /search T cells"
             onKeyDown={(e) => {
               if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText && !loading) {
                 this.inputSubmit();
