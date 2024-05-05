@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterable
 
 from server.common.errors import ColorFormatException
 
@@ -227,7 +228,15 @@ def convert_anndata_category_colors_to_cxg_category_colors(data):
             continue
 
         # create the cellxgene color entry for this category
-        cxg_colors[category_name] = dict(
-            zip(data.obs[category_name].cat.categories, [convert_color_to_hex_format(c) for c in data.uns[uns_key]])
-        )
+        if isinstance(data.uns[uns_key], dict):
+            cxg_colors[category_name] = data.uns[uns_key]
+        elif isinstance(data.uns[uns_key], Iterable):
+            cxg_colors[category_name] = dict(
+                zip(data.obs[category_name].cat.categories, [convert_color_to_hex_format(c) for c in data.uns[uns_key]])
+            )
+        else:
+            raise ValueError(
+                f"Unexpected color data format in anndata file. Expected dict or iterable.: {uns_key}: {type(data.uns[uns_key])}.\n {data.uns[uns_key]}."
+            )
+
     return cxg_colors

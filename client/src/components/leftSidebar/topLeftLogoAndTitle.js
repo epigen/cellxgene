@@ -96,19 +96,19 @@ class LeftSideBar extends React.Component {
           </div>
         </div>
         <div style={{ marginRight: 5, height: "100%" }}>
-          <span
-            minimal
-            style={{
-              fontSize: DATASET_TITLE_FONT_SIZE,
-              padding: "5px 10px",
-            }}
-          >
-            <Truncate>
-              <span style={{ maxWidth: 155 }} data-testid="header">
-                {title ?? datasetTitle}
-              </span>
-            </Truncate>
-          </span>
+          {/* <span */}
+          {/*   minimal */}
+          {/*   style={{ */}
+          {/*     fontSize: DATASET_TITLE_FONT_SIZE, */}
+          {/*     padding: "5px 10px", */}
+          {/*   }} */}
+          {/* > */}
+          {/*   <Truncate> */}
+          {/*     <span style={{ maxWidth: 155 }} data-testid="header"> */}
+          {/*       {title ?? datasetTitle} */}
+          {/*     </span> */}
+          {/*   </Truncate> */}
+          {/* </span> */}
           <InformationMenu
             {...{
               libraryVersions,
