@@ -150,7 +150,6 @@ class ChatSideBar extends React.Component {
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
                 backgroundColor: message.from === "human" ? "#96c03a" : "#bee3ef",
                 padding: "5px 10px",
                 borderRadius: "5px",
