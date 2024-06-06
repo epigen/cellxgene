@@ -16,8 +16,7 @@ from pathlib import Path
 # logger = build_logger("gradio_web_server", "gradio_web_server.log")
 logger = logging.getLogger("llava_utils")
 
-CONTROLLER_URL = "http://cellwhisperer_llava_controller:10000"
-# CONTROLLER_URL = "http://localhost:10000"
+CONTROLLER_URL = "https://cellwhisperer.bocklab.org/llava-controller"  # NOTE: would be nicer to have this configurable
 LOGDIR = Path(os.getenv("LOGDIR", "./logs/"))
 LOGDIR.mkdir(exist_ok=True)
 

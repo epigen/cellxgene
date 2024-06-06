@@ -236,7 +236,12 @@ def launch_args(func):
     @dataset_args
     @server_args
     @click.argument("datapath", required=False, metavar="<path to data file>")
-    @click.argument("modelpath", required=False, metavar="<path to model checkpoint>")
+    @click.option(
+        "--cellwhisperer-clip-model",
+        default="https://cellwhisperer.bocklab.org/clip/api",
+        required=False,
+        metavar="<path to model checkpoint>",
+    )
     @click.option(
         "--open",
         "-o",
@@ -318,7 +323,7 @@ class CliLaunchServer(Server):
 @launch_args
 def launch(
     datapath,
-    modelpath,
+    cellwhisperer_clip_model,
     verbose,
     debug,
     open_browser,
@@ -405,7 +410,7 @@ def launch(
             diffexp__lfc_cutoff=diffexp_lfc_cutoff,
             llmembs__enable=not disable_llmembs,
             llmembs__gene_score_contribution_enable=enable_llmembs_gene_score_contribution and (not disable_llmembs),
-            llmembs__model_checkpoint=modelpath,
+            llmembs__model_checkpoint=cellwhisperer_clip_model,
             X_approximate_distribution=x_approximate_distribution,
         )
 
