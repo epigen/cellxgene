@@ -27,23 +27,6 @@ logger = logging.getLogger(__name__)
 MODEL_NAME = "Mistral-7B-Instruct-v0.2__cellwhisperer_clip_v1"
 
 
-def gene_score_contributions(
-    transcriptome_input: torch.Tensor,
-    text_list_or_text_embeds: Union[List[str], torch.Tensor],
-    logit_scale: float,
-    score_norm_method: str = None,
-) -> pd.Series:
-    """
-    Just a dummy for testing
-    """
-    return pd.Series(
-        {
-            "Gene 1": 0.1,
-            "Gene 2": -0.1,
-        }
-    )
-
-
 class CellWhispererWrapper:
     def __init__(self, model_path_or_url: str):
         """
@@ -85,6 +68,8 @@ class CellWhispererWrapper:
 
     def llm_obs_to_text(self, adaptor, mask):
         """
+        Currently unused, in favor of the more advanced chat functionality, but still functional
+
         Embed the given cells into the LLM space and return their average similarity to different keywords as formatted text.
         Keyword types used for comparison are: (i) selected enrichR terms (see cellwhisperer.validation.zero_shot.functions.write_enrichr_terms_to_json) \
         and (ii) cell type annotations (currently all values in adata.obs.columns). For more info, see cellwhisperer.validation.zero_shot.functions.
@@ -231,7 +216,7 @@ class CellWhispererWrapper:
         codes = np.concatenate([top_genes_df[col].cat.codes.values for col in top_genes_df.columns])
         counts = np.bincount(codes, minlength=len(top_genes_df["Top_1"].cat.categories))
         category_counts = pd.Series(counts, index=top_genes_df[top_genes_df.columns[0]].cat.categories)
-        n_top_genes = 50  # TODO number of top genes to list needs to become configurable
+        n_top_genes = 50  # NOTE number of top genes to list should be configurable
         top_genes = category_counts.sort_values(ascending=False).index[:n_top_genes].to_list()
 
         # Initialize the conversation
@@ -250,7 +235,7 @@ class CellWhispererWrapper:
         ]
         state.offset = 2
 
-        # TODO the transcriptome is added too late. consider changing
+        # NOTE: the transcriptome is added too late. consider changing
 
         for i, message in enumerate(messages):
             if i == 0:
@@ -275,7 +260,6 @@ class CellWhispererWrapper:
 
         state.append_message(state.roles[1], None)
 
-        # TODO need to make CONTROLLER_URL flexible in there
         for chunk in llava_utils.http_bot(state, MODEL_NAME, temperature, top_p=0.7, max_new_tokens=512, log=True):
             yield json.dumps({"text": chunk}).encode() + b"\x00"
 
@@ -283,6 +267,7 @@ class CellWhispererWrapper:
         """
         Which genes increase or decrease the prompt-similiarity in the selected cells?
         """
+        raise NotImplementedError("Analysis showed that this is not working as expected")
 
         var_index_col_name = adaptor.get_schema()["annotations"]["var"]["index"]
         obs_index_col_name = adaptor.get_schema()["annotations"]["obs"]["index"]
@@ -296,7 +281,7 @@ class CellWhispererWrapper:
 
         text_embeds = self._embed_texts([prompt])
 
-        gene_contribs: pd.Series = gene_score_contributions(
+        gene_contribs: pd.Series = gene_score_contributions(  # NOTE: note implemented
             transcriptome_input=transcriptomes,
             text_list_or_text_embeds=text_embeds,
             logit_scale=self.logit_scale,
