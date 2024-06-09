@@ -1,13 +1,4 @@
-# Moritz notes
-
-Read this to get started (install& get startend)
-https://github.com/chanzuckerberg/cellxgene/blob/main/dev_docs/developer_guidelines.md
-
-## Installation
-
-### Workaround \[webpack-cli] HookWebpackError: error:0308010C:digital envelope routines::unsupported
-
-Run `export NODE_OPTIONS=--openssl-legacy-provider` before `make build-for-server-dev`
+This is a forked and modified version of the original CELLxGENE explorer that accommodates the CellWhisperer model.
 
 # General
 
