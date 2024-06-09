@@ -52,7 +52,8 @@ const ColorsReducer = (
     }
 
     case "color by categorical metadata":
-    case "color by continuous metadata": {
+    case "color by continuous metadata":
+    case "color by cellwhisperer search": {
       /* toggle between this mode and reset */
       const resetCurrent =
         action.type === state.colorMode &&

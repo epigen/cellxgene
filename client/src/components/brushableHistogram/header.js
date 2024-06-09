@@ -14,6 +14,7 @@ const HistogramHeader = React.memo(
     onScatterPlotXClick,
     onScatterPlotYClick,
     isObs,
+    isCellwhisperer,
   }) => {
     /*
         Render the toolbar for the histogram.  Props:
@@ -30,8 +31,8 @@ const HistogramHeader = React.memo(
       */
 
     const memoizedColorByCallback = useCallback(
-      () => onColorByClick(fieldId, isObs),
-      [fieldId, isObs]
+      () => onColorByClick(fieldId, isObs, isCellwhisperer),
+      [fieldId, isObs, isCellwhisperer]
     );
 
     return (

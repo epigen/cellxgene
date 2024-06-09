@@ -1,7 +1,6 @@
 import React from "react";
 import { connect } from "react-redux";
 import * as d3 from "d3";
-import { interpolateCool } from "d3-scale-chromatic";
 
 import {
   createColorTable,
@@ -99,9 +98,9 @@ const continuous = (selectorId, colorScale, colorAccessor) => {
     .attr("x", 0 - legendHeight / 2)
     .attr("dy", "1em")
     .attr("data-testid", "continuous_legend_color_by_label")
-    .attr("aria-label", colorAccessor)
+    .attr("aria-label", colorAccessor)  // I hope this works even though I pass it the formatted name
     .style("text-anchor", "middle")
-    .style("fill", "white")
+    .style("fill", "black")
     .text(colorAccessor);
 };
 
@@ -136,6 +135,7 @@ class ContinuousLegend extends React.Component {
       );
 
       const colorScale = colorTable.scale;
+      const colorInterpolateFn = colorTable.interpolateFn;
       const range = colorScale?.range;
       const [domainMin, domainMax] = colorScale?.domain?.() ?? [0, 0];
 
@@ -147,8 +147,10 @@ class ContinuousLegend extends React.Component {
         if (range()[0][0] !== "#") {
           continuous(
             "#continuous_legend",
-            d3.scaleSequential(interpolateCool).domain(colorScale.domain()),
-            colorAccessor
+            d3.scaleSequential(colorInterpolateFn).domain(colorScale.domain()),
+            colorMode == "color by cellwhisperer search" ?
+              colorAccessor.split('_').slice(1).join(' ') :
+              colorAccessor
           );
         }
       }

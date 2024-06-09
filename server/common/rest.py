@@ -5,7 +5,7 @@ from http import HTTPStatus
 import zlib
 import json
 
-from flask import make_response, jsonify, current_app, abort
+from flask import make_response, jsonify, current_app, abort, stream_with_context
 from urllib.parse import unquote
 
 from server.common.config.client_config import get_client_config
@@ -397,3 +397,179 @@ def summarize_var_post(request, data_adaptor):
 
     key = request.args.get("key", default=None)
     return summarize_var_helper(request, data_adaptor, key, request.get_data())
+
+
+def llm_embeddings_text_post(request, data_adaptor):
+    """
+    Given a text description, return a cell annotation
+    """
+    try:
+        llm_embeddings_text_post.counter
+    except AttributeError:
+        llm_embeddings_text_post.counter = 0
+
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        text = args.get("text")
+
+        if text is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter text")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        labels = data_adaptor.compute_llmembs_text_to_annotations(text)
+
+        # compute a string-like hash and take the first 5 characters
+
+        annotation_name = (
+            f"{llm_embeddings_text_post.counter}_{text.replace(' ', '_')[:20] + '...' if len(text) > 22 else text}"
+        )
+        llm_embeddings_text_post.counter += 1
+
+        labels.name = annotation_name
+        index_name = data_adaptor.parameters.get("obs_names")
+        labels.index = data_adaptor.data.obs[index_name]
+
+        if request.accept_mimetypes.accept_json:
+            return make_response(jsonify(labels.to_dict()), HTTPStatus.OK)
+
+        fbs = data_adaptor.annotation_to_fbs_matrix(
+            Axis.OBS, [annotation_name], labels.to_frame()
+        )  # same as calling encode_matrix_fbs directly
+
+        return make_response(fbs, HTTPStatus.OK, {"Content-Type": "application/octet-stream"})
+
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_obs_post(request, data_adaptor):
+    """
+    Given a set of cells, return a text description for them
+    """
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
+
+        if selection_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter set1")
+        if Axis.VAR in selection_filter:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "var axis filter not enabled")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        model_result = data_adaptor.llmembs_obs_to_text(selection_filter)
+        return make_response(model_result, HTTPStatus.OK, {"Content-Type": "application/json"})
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_chat_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
+
+        # TODO more filters may be appropriate
+        if selection_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter cellSelection")
+
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        chat_generator = data_adaptor.establish_llmembs_chat(args, selection_filter)
+
+        response = make_response(
+            stream_with_context(chat_generator), HTTPStatus.OK, {"Content-Type": "application/json"}
+        )
+        response.headers["Content-Encoding"] = "identity"  # Explicitly set to 'identity' to indicate no compression
+        return response
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_feedback_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        args["thumbDirection"]
+        args["messages"]
+        selection_filter = args["cellSelection"]["filter"]
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        data_adaptor.llmembs_feedback(args, selection_filter)
+        return make_response(jsonify({"status": "OK"}), HTTPStatus.OK)
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise
+
+
+def llm_embeddings_gene_contributions_post(request, data_adaptor):
+    if not data_adaptor.dataset_config.llmembs__enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    if not data_adaptor.dataset_config.llmembs__gene_score_contribution_enable:
+        return abort(HTTPStatus.NOT_IMPLEMENTED)
+
+    args = request.get_json()
+    try:
+        text = args.get("text")
+
+        if text is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter text")
+
+        selection_filter = args.get("cellSelection", {"filter": {}})["filter"]
+
+        if selection_filter is None:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "missing required parameter set1")
+        if Axis.VAR in selection_filter:
+            return abort_and_log(HTTPStatus.BAD_REQUEST, "var axis filter not enabled")
+    except (KeyError, TypeError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+
+    try:
+        gene_score_contributions = data_adaptor.compute_gene_score_contributions(text, selection_filter)
+        return make_response(jsonify(gene_score_contributions.to_dict()), HTTPStatus.OK)
+    except (ValueError, DisabledFeatureError, FilterError, ExceedsLimitError) as e:
+        return abort_and_log(HTTPStatus.BAD_REQUEST, str(e), include_exc_info=True)
+    except JSONEncodingValueError:
+        # JSON encoding failure, usually due to bad data. Just let it ripple up
+        # to default exception handler.
+        current_app.logger.warning(JSON_NaN_to_num_warning_msg)
+        raise

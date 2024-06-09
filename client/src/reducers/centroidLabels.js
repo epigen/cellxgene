@@ -1,5 +1,5 @@
 const initialState = {
-  showLabels: false,
+  showLabels: true,
 };
 
 const centroidLabels = (state = initialState, action, sharedNextState) => {

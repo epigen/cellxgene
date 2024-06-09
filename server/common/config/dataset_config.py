@@ -38,6 +38,10 @@ class DatasetConfig(BaseConfig):
             self.diffexp__lfc_cutoff = default_config["diffexp"]["lfc_cutoff"]
             self.diffexp__top_n = default_config["diffexp"]["top_n"]
 
+            self.llmembs__enable = default_config["llmembs"]["enable"]
+            self.llmembs__gene_score_contribution_enable = default_config["llmembs"]["gene_score_contribution_enable"]
+            self.llmembs__model_checkpoint = default_config["llmembs"]["model_checkpoint"]
+
             self.X_approximate_distribution = default_config["X_approximate_distribution"]
 
         except KeyError as e:
@@ -52,6 +56,7 @@ class DatasetConfig(BaseConfig):
         self.handle_user_annotations(context)
         self.handle_embeddings()
         self.handle_diffexp(context)
+        self.handle_llmembs(context)
         self.handle_X_approximate_distribution()
 
     def get_data_adaptor(self):
@@ -176,10 +181,15 @@ class DatasetConfig(BaseConfig):
         self.validate_correct_type_of_configuration_attribute("diffexp__top_n", int)
 
         data_adaptor = self.get_data_adaptor()
-        if self.diffexp__enable and data_adaptor.parameters.get("diffexp_may_be_slow", False):
+        if self.diffexp__enable and data_adaptor.parameters.get("diffexp-may-be-slow", False):
             context["messagefn"](
                 "CAUTION: due to the size of your dataset, " "running differential expression may take longer or fail."
             )
+
+    def handle_llmembs(self, context):
+        self.validate_correct_type_of_configuration_attribute("llmembs__enable", bool)
+        self.validate_correct_type_of_configuration_attribute("llmembs__gene_score_contribution_enable", bool)
+        self.validate_correct_type_of_configuration_attribute("llmembs__model_checkpoint", str)
 
     def handle_X_approximate_distribution(self):
         self.validate_correct_type_of_configuration_attribute("X_approximate_distribution", str)

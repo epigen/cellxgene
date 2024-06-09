@@ -127,8 +127,9 @@ class CentroidLabels extends PureComponent {
             if (!showLabels) return null;
 
             const labelSVGS = [];
-            const deselectOpacity = 0.375;
             const { category, colorAccessor, labels } = asyncProps;
+            const deselectOpacity = 0.1;
+            const selectOpacity = labels.size <= 20 ? 1 : (labels.size < 130 ? 1 - (0.9 * (labels.size - 20) / (130 - 20)) : 0.1);
 
             labels.forEach((coords, label) => {
               const selected = category.get(label) ?? true;
@@ -150,7 +151,7 @@ class CentroidLabels extends PureComponent {
                   dilatedValue={dilatedValue}
                   coords={coords}
                   inverseTransform={inverseTransform}
-                  opactity={selected ? 1 : deselectOpacity}
+                  opacity={selected ? selectOpacity : deselectOpacity}
                   colorAccessor={colorAccessor}
                   displayLabel={displayLabel}
                   onMouseEnter={this.handleMouseEnter}
@@ -186,6 +187,7 @@ const Label = ({
   if (label === dilatedValue) {
     fontSize = "18px";
     fontWeight = "800";
+    opacity = 1.0;
   }
 
   return (
@@ -205,7 +207,7 @@ const Label = ({
           fontWeight,
           fill: "black",
           userSelect: "none",
-          opacity: { opacity },
+          opacity,
         }}
         onMouseEnter={(e) => onMouseEnter(e, colorAccessor, label)}
         onMouseOut={(e) => onMouseOut(e, colorAccessor, label)}

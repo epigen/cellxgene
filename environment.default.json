@@ -1,8 +1,9 @@
 {
   "CXG_CLIENT_PORT": 3000,
-  "CXG_OPTIONS": "--debug",
+  "CXG_OPTIONS": "--debug --host 0.0.0.0 --max-category-items 500 --enable-llmembs-gene-score-contribution --backed --var-names gene_name",
   "CXG_SERVER_PORT": 5005,
-  "DATASET": "example-dataset/pbmc3k.h5ad",
+  "DATASET": "~/cellwhisperer/results/human_disease/cellwhisperer_clip_v1/cellxgene.h5ad",
+  "MODEL": "~/cellwhisperer/results/models/jointemb/cellwhisperer_clip_v1.ckpt",
   "DEBUG": "debug",
   "DEV": "dev",
   "JEST_ENV": "prod",

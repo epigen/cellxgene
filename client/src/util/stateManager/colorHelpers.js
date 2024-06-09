@@ -2,7 +2,7 @@
 Helper functions for the embedded graph colors
 */
 import * as d3 from "d3";
-import { interpolateRainbow, interpolateCool } from "d3-scale-chromatic";
+import { interpolateRainbow, interpolateCool, interpolateRdBu } from "d3-scale-chromatic";
 import memoize from "memoize-one";
 import * as globals from "../../globals";
 import parseRGB from "../parseRGB";
@@ -16,7 +16,8 @@ export function createColorQuery(colorMode, colorByAccessor, schema, genesets) {
   if (!colorMode || !colorByAccessor || !schema || !genesets) return null;
 
   switch (colorMode) {
-    case "color by categorical metadata":
+  case "color by cellwhisperer search":
+  case "color by categorical metadata":
     case "color by continuous metadata": {
       return ["obs", colorByAccessor];
     }
@@ -112,6 +113,11 @@ function _createColorTable(
       const col = colorByData.icol(0);
       const { min, max } = col.summarize();
       return createColorsByContinuousMetadata(col.asArray(), min, max);
+    }
+    case "color by cellwhisperer search": {
+      const col = colorByData.col(colorByAccessor);
+      const { min, max } = col.summarize();
+      return createColorsByCellwhispererSearch(col.asArray(), min, max);
     }
     default: {
       return defaultColors(schema.dataframe.nObs);
@@ -212,8 +218,73 @@ function _createColorsByContinuousMetadata(data, min, max) {
       rgb[i] = nonFiniteColor;
     }
   }
-  return { rgb, scale };
+  return { rgb, scale, interpolateFn: interpolateCool };
 }
+
+
+function _createColorsByCellwhispererSearch(data, min, max) {
+  const colorBins = 100;
+  let negativeBins = 0;
+  let positiveBins = 0;
+  let interval, start, end;
+  const colors = new Array(colorBins);
+
+  // Determine the number of bins for negative and positive ranges based on their proportion
+  if (min < 0 && max > 0) {
+    const totalRange = max - min;
+    negativeBins = Math.round(((-min) / totalRange) * colorBins);
+    positiveBins = colorBins - negativeBins; // Remaining bins for positive values
+  } else if (max <= 0) {
+    // All values are non-positive, use all bins
+    negativeBins = colorBins;
+  } else {
+    // All values are non-negative, use all bins
+    positiveBins = colorBins;
+  }
+
+  // by convention the color scale is reversed.
+  const scale = d3
+        .scaleQuantile()
+        .domain([min, max])
+        .range(range(colorBins - 1, -1, -1));
+
+  // positiveBins correspond to the range [0.5, 1.0] and negativeBins to the range [0.0, 0.5]. however, the number of bins needs to flip, due to the reverted color scale
+  if (positiveBins < negativeBins) {
+    interval = 0.5 / negativeBins;
+    start = 0.5 - (interval * positiveBins);
+    end = 1.0;  // neg end
+  } else {
+    interval = 0.5 / positiveBins;
+    start = 0.0;
+    end = 0.5 + (interval * positiveBins);
+  }
+  function interpolateRdBuScaled(t) {
+    return interpolateRdBu(start + (t * interval * colorBins));
+  }
+
+  for (let i = 0; i < colorBins; i += 1) {
+    colors[i] = parseRGB(interpolateRdBuScaled(i / (colorBins -1)));
+  }
+
+  const nonFiniteColor = parseRGB(globals.nonFiniteCellColor);
+  const rgb = new Array(data.length);
+  for (let i = 0, len = data.length; i < len; i += 1) {
+    const val = data[i];
+    if (Number.isFinite(val)) {
+      const c = scale(val);
+      rgb[i] = colors[c];
+    } else {
+      rgb[i] = nonFiniteColor;
+    }
+  }
+  return { rgb, scale, interpolateFn: interpolateRdBuScaled };
+}
+
+
 export const createColorsByContinuousMetadata = memoize(
   _createColorsByContinuousMetadata
+);
+
+export const createColorsByCellwhispererSearch = memoize(
+  _createColorsByCellwhispererSearch
 );

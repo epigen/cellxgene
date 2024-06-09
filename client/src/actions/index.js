@@ -11,6 +11,7 @@ import * as annoActions from "./annotation";
 import * as viewActions from "./viewStack";
 import * as embActions from "./embedding";
 import * as genesetActions from "./geneset";
+import * as llmEmbeddingsActions from "./llmEmbeddings";
 
 function setGlobalConfig(config) {
   /**
@@ -118,6 +119,12 @@ const doInitialDataLoad = () =>
       ) {
         dispatch(embActions.layoutChoiceAction(defaultEmbedding));
       }
+      dispatch({
+        type: "color by categorical metadata",
+        colorAccessor: "cluster_label"  // NOTE could be made configurable
+      });
+
+
     } catch (error) {
       dispatch({ type: "initial data load error", error });
     }
@@ -236,6 +243,7 @@ function fetchJson(pathAndQuery) {
 }
 
 export default {
+  fetchJson,
   doInitialDataLoad,
   requestDifferentialExpression,
   requestSingleGeneExpressionCountsForColoringPOST,
@@ -256,6 +264,8 @@ export default {
   clipAction: viewActions.clipAction,
   subsetAction: viewActions.subsetAction,
   resetSubsetAction: viewActions.resetSubsetAction,
+  annotationCreateContinuousAction:
+    annoActions.annotationCreateContinuousAction,
   annotationCreateCategoryAction: annoActions.annotationCreateCategoryAction,
   annotationRenameCategoryAction: annoActions.annotationRenameCategoryAction,
   annotationDeleteCategoryAction: annoActions.annotationDeleteCategoryAction,
@@ -272,4 +282,10 @@ export default {
   genesetDelete: genesetActions.genesetDelete,
   genesetAddGenes: genesetActions.genesetAddGenes,
   genesetDeleteGenes: genesetActions.genesetDeleteGenes,
+  requestEmbeddingLLMWithText: llmEmbeddingsActions.requestEmbeddingLLMWithText,
+  requestEmbeddingLLMWithCells:
+    llmEmbeddingsActions.requestEmbeddingLLMWithCells,
+  startChatRequest: llmEmbeddingsActions.startChatRequest,
+  geneContributionRequest: llmEmbeddingsActions.geneContributionRequest,
+  chatFeedback: llmEmbeddingsActions.chatFeedback,
 };

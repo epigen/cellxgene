@@ -99,6 +99,20 @@ def config_args(func):
         help="Disable on-demand differential expression.",
     )
     @click.option(
+        "--disable-llmembs",
+        is_flag=True,
+        default=not DEFAULT_CONFIG.dataset_config.llmembs__enable,
+        show_default=False,
+        help="Disable on-demand LLM-Embeddings services.",
+    )
+    @click.option(
+        "--enable-llmembs-gene-score-contribution",
+        is_flag=True,
+        default=DEFAULT_CONFIG.dataset_config.llmembs__gene_score_contribution_enable,
+        show_default=False,
+        help="Enable gene score contribution to LLM-Embeddings.",
+    )
+    @click.option(
         "--embedding",
         "-e",
         default=DEFAULT_CONFIG.dataset_config.embeddings__names,
@@ -223,6 +237,12 @@ def launch_args(func):
     @server_args
     @click.argument("datapath", required=False, metavar="<path to data file>")
     @click.option(
+        "--cellwhisperer-clip-model",
+        default="https://cellwhisperer.cemm.at/clip/api",
+        required=False,
+        metavar="<path to model checkpoint>",
+    )
+    @click.option(
         "--open",
         "-o",
         "open_browser",
@@ -303,6 +323,7 @@ class CliLaunchServer(Server):
 @launch_args
 def launch(
     datapath,
+    cellwhisperer_clip_model,
     verbose,
     debug,
     open_browser,
@@ -324,6 +345,8 @@ def launch(
     disable_gene_sets_save,
     backed,
     disable_diffexp,
+    disable_llmembs,
+    enable_llmembs_gene_score_contribution,
     config_file,
     dump_default_config,
     x_approximate_distribution,
@@ -385,6 +408,9 @@ def launch(
             embeddings__names=embedding,
             diffexp__enable=not disable_diffexp,
             diffexp__lfc_cutoff=diffexp_lfc_cutoff,
+            llmembs__enable=not disable_llmembs,
+            llmembs__gene_score_contribution_enable=enable_llmembs_gene_score_contribution and (not disable_llmembs),
+            llmembs__model_checkpoint=cellwhisperer_clip_model,
             X_approximate_distribution=x_approximate_distribution,
         )
 

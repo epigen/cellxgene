@@ -81,6 +81,7 @@ const saveOnActions = new Set([
   "color by continuous metadata",
   "color by expression",
   "color by geneset mean expression",
+  "color by cellwhisperer search",
 
   "show centroid labels for category",
 
@@ -104,6 +105,8 @@ const saveOnActions = new Set([
   "annotation: label current cell selection",
   "annotation: delete label",
   "annotation: category edited",
+
+  "annotation: create continuous",
 
   /* geneset component action */
   "geneset: create",

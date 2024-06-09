@@ -1,20 +1,25 @@
+import logging
 import warnings
 
 import anndata
 import numpy as np
+import pandas as pd
+
 from packaging import version
 from pandas.core.dtypes.dtypes import CategoricalDtype
 from scipy import sparse
 
 import server.common.compute.diffexp_generic as diffexp_generic
+from server.common.compute.cellwhisperer_wrapper import CellWhispererWrapper
 import server.common.compute.estimate_distribution as estimate_distribution
 from server.common.colors import convert_anndata_category_colors_to_cxg_category_colors
 from server.common.constants import Axis, MAX_LAYOUTS, XApproximateDistribution
 from server.common.corpora import corpora_get_props_from_anndata
-from server.common.errors import PrepareError, DatasetAccessError
+from server.common.errors import PrepareError, DatasetAccessError, FilterError
 from server.common.utils.type_conversion_utils import get_schema_type_hint_of_array
 from server.data_common.data_adaptor import DataAdaptor
 from server.common.fbs.matrix import encode_matrix_fbs
+
 
 anndata_version = version.parse(str(anndata.__version__)).release
 
@@ -32,6 +37,9 @@ class AnndataAdaptor(DataAdaptor):
         self.X_approximate_distribution = None
         self._load_data(data_locator)
         self._validate_and_initialize()
+        self.cellwhisperer = CellWhispererWrapper(self.dataset_config.llmembs__model_checkpoint)
+
+        self.cellwhisperer.preprocess_data(self)  # required to cache all the keywords
 
     def cleanup(self):
         pass
@@ -111,6 +119,15 @@ class AnndataAdaptor(DataAdaptor):
                 # previously specified index.
                 df_axis.rename_axis(name, inplace=True)
                 df_axis.reset_index(inplace=True)
+                # convert index to str (anndata wants it like this)
+                df_axis.index = df_axis.index.astype(str)
+                for value in getattr(self.data, f"{ax_name}m").values():
+                    try:
+                        value.reset_index(inplace=True, drop=True)
+                        # convert index to str
+                        value.index = value.index.astype(str)
+                    except AttributeError:
+                        pass
             elif name in df_axis.columns:
                 # User has specified alternative column for unique names, and it exists
                 if not df_axis[name].is_unique:
@@ -118,6 +135,13 @@ class AnndataAdaptor(DataAdaptor):
                         f"Values in {ax_name}.{name} must be unique. " "Please prepare data to contain unique values."
                     )
                 df_axis.reset_index(drop=True, inplace=True)
+                df_axis.index = df_axis.index.astype(str)
+                for value in getattr(self.data, f"{ax_name}m").values():
+                    try:
+                        value.reset_index(drop=True, inplace=True)
+                        value.index = value.index.astype(str)
+                    except AttributeError:
+                        pass
                 self.parameters[parameter_name] = name
             else:
                 # user specified a non-existent column name
@@ -211,7 +235,7 @@ class AnndataAdaptor(DataAdaptor):
         # heuristic
         n_values = self.data.shape[0] * self.data.shape[1]
         if (n_values > 1e8 and self.server_config.adaptor__anndata_adaptor__backed is True) or (n_values > 5e8):
-            self.parameters.update({"diffexp_may_be_slow": True})
+            self.parameters.update({"diffexp-may-be-slow": True})
 
     def _is_valid_layout(self, arr):
         """return True if this layout data is a valid array for front-end presentation:
@@ -332,6 +356,58 @@ class AnndataAdaptor(DataAdaptor):
         if lfc_cutoff is None:
             lfc_cutoff = self.dataset_config.diffexp__lfc_cutoff
         return diffexp_generic.diffexp_ttest(self, maskA, maskB, top_n, lfc_cutoff)
+
+    def compute_llmembs_obs_to_text(self, mask):
+        return self.cellwhisperer.llm_obs_to_text(self, mask)
+
+    def compute_llmembs_text_to_annotations(self, text):
+        """
+        Computes an LLM embedding for each cell and compares it to the embedding of the text and returns the distance
+
+        :param text: the text to embed
+        :return: pandas Series of cell embeddings
+        """
+        return self.cellwhisperer.llm_text_to_annotations(self, text=text)
+
+    def compute_gene_score_contributions(self, text, obs_filter) -> pd.Series:
+        """ """
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.gene_score_contributions(self, text, obs_mask)
+
+    def establish_llmembs_chat(self, data, obs_filter):
+        """
+        Computes the mean expression of each gene in the dataset for the specified observations and runs the
+        embedding LLM to generate a text
+        :param obs_filter: filter: dictionary with filter params for set of observations (cells)
+        :return: generator on text
+        """
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.llm_chat(self, data["messages"], obs_mask, temperature=data.get("temperature", 0.0))
+
+    def llmembs_feedback(self, data, obs_filter):
+        if Axis.VAR in obs_filter:
+            raise FilterError("Observation filters may not contain variable conditions")
+        try:
+            shape = self.get_shape()
+            obs_mask = self._axis_filter_to_mask(Axis.OBS, obs_filter["obs"], shape[0])
+        except (KeyError, IndexError):
+            raise FilterError("Error parsing filter")
+
+        return self.cellwhisperer.llm_feedback(self, data["messages"], obs_mask, data["thumbDirection"])
 
     def get_colors(self):
         return convert_anndata_category_colors_to_cxg_category_colors(self.data)

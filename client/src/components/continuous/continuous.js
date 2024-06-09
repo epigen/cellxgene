@@ -6,11 +6,12 @@ import HistogramBrush from "../brushableHistogram";
 
 @connect((state) => ({
   schema: state.annoMatrix?.schema,
+  cellwhispererSearches: state.llmEmbeddings.cellwhispererSearches
 }))
 class Continuous extends React.PureComponent {
   render() {
     /* initial value for iterator to simulate index, ranges is an object */
-    const { schema } = this.props;
+    const { schema, cellwhispererSearches } = this.props;
     if (!schema) return null;
     const obsIndex = schema.annotations.obs.index;
     const allContinuousNames = schema.annotations.obs.columns
@@ -22,7 +23,7 @@ class Continuous extends React.PureComponent {
     return (
       <div>
         {allContinuousNames.map((key, zebra) => (
-          <HistogramBrush key={key} field={key} isObs zebra={zebra % 2 === 0} />
+          <HistogramBrush key={key} field={key} isObs isCellwhisperer={cellwhispererSearches.includes(key)} zebra={zebra % 2 === 0} />
         ))}
       </div>
     );

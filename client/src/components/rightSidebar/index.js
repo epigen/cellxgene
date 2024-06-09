@@ -1,6 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import GeneExpression from "../geneExpression";
+import ChatSideBar from "../chatSidebar";
 import * as globals from "../../globals";
 
 @connect((state) => ({
@@ -8,6 +9,7 @@ import * as globals from "../../globals";
   scatterplotYYaccessor: state.controls.scatterplotYYaccessor,
 }))
 class RightSidebar extends React.Component {
+  // Bar should capitalized...
   render() {
     return (
       <div
@@ -24,6 +26,7 @@ class RightSidebar extends React.Component {
         }}
       >
         <GeneExpression />
+        <ChatSideBar />
       </div>
     );
   }

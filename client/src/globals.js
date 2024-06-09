@@ -74,8 +74,8 @@ export const graphWidth = 700;
 export const graphHeight = 700;
 export const scatterplotMarginLeft = 11;
 
-export const rightSidebarWidth = 365;
-export const leftSidebarWidth = 365;
+export const rightSidebarWidth = 515;
+export const leftSidebarWidth = 325;
 export const leftSidebarSectionHeading = {
   fontSize: 18,
   textTransform: "uppercase",
@@ -83,7 +83,7 @@ export const leftSidebarSectionHeading = {
   letterSpacing: ".05em",
 };
 export const leftSidebarSectionPadding = 10;
-export const categoryLabelDisplayStringLongLength = 27;
+export const categoryLabelDisplayStringLongLength = 70;
 export const categoryLabelDisplayStringShortLength = 11;
 export const categoryDisplayStringMaxLength = 33;
 
@@ -115,6 +115,7 @@ if (typeof window !== "undefined" && window.CELLXGENE && window.CELLXGENE.API) {
     // prefix: "http://api.clustering.czi.technology/api/",
     // prefix: "http://tabulamuris.cxg.czi.technology/api/",
     // prefix: "http://api-staging.clustering.czi.technology/api/",
+    // prefix: `http://s0-n11.hpc.meduniwien.ac.at:${CXG_SERVER_PORT}/api/`,
     prefix: `http://localhost:${CXG_SERVER_PORT}/api/`,
     version: "v0.2/",
   };

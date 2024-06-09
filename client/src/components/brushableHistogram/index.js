@@ -1,11 +1,13 @@
 import React from "react";
 import { connect, shallowEqual } from "react-redux";
 import * as d3 from "d3";
+import { interpolateCool, interpolateRdBu } from "d3-scale-chromatic";
 import Async from "react-async";
 import memoize from "memoize-one";
 import * as globals from "../../globals";
 import actions from "../../actions";
 import { makeContinuousDimensionName } from "../../util/nameCreators";
+import { createColorsByCellwhispererSearch } from "../../util/stateManager/colorHelpers";
 import HistogramHeader from "./header";
 import Histogram from "./histogram";
 import HistogramFooter from "./footer";
@@ -18,7 +20,7 @@ const MARGIN = {
   BOTTOM: 25, // space for X axis & labels
   TOP: 3,
 };
-const WIDTH = 340 - MARGIN.LEFT - MARGIN.RIGHT;
+const WIDTH = 300 - MARGIN.LEFT - MARGIN.RIGHT;
 const HEIGHT = 135 - MARGIN.TOP - MARGIN.BOTTOM;
 const MARGIN_MINI = {
   LEFT: 0, // Space for 0 tick label on X axis
@@ -49,8 +51,14 @@ class HistogramBrush extends React.PureComponent {
   }
 
   /* memoized closure to prevent HistogramHeader unecessary repaint */
-  handleColorAction = memoize((dispatch) => (field, isObs) => {
-    if (isObs) {
+  handleColorAction = memoize((dispatch) => (field, isObs, isCellwhisperer) => {
+    if (isCellwhisperer) {
+      dispatch({
+        type: "color by cellwhisperer search",
+        colorAccessor: field,
+      });
+    }
+    else if (isObs) {
       dispatch({
         type: "color by continuous metadata",
         colorAccessor: field,
@@ -341,6 +349,7 @@ class HistogramBrush extends React.PureComponent {
       zebra,
       continuousSelectionRange,
       isObs,
+      isCellwhisperer,
       mini,
       setGenes,
     } = this.props;
@@ -388,6 +397,7 @@ class HistogramBrush extends React.PureComponent {
                     fieldId={field}
                     isColorBy={isColorAccessor}
                     isObs={isObs}
+                    isCellwhisperer={isCellwhisperer}
                     onColorByClick={this.handleColorAction(dispatch)}
                     onRemoveClick={isUserDefined ? this.removeHistogram : null}
                     isScatterPlotX={isScatterplotXXaccessor}
@@ -413,6 +423,7 @@ class HistogramBrush extends React.PureComponent {
                   onBrushEnd={this.onBrushEnd}
                   margin={mini ? MARGIN_MINI : MARGIN}
                   isColorBy={isColorAccessor}
+                  interpolateFn={isCellwhisperer ? createColorsByCellwhispererSearch(new Array(0), asyncProps.range[0], asyncProps.range[1]).interpolateFn : interpolateCool}  // TODO not sure whether I should use unclippedRange here
                   selectionRange={continuousSelectionRange}
                   mini={mini}
                 />
@@ -420,7 +431,9 @@ class HistogramBrush extends React.PureComponent {
                   <HistogramFooter
                     isGeneSetSummary={isGeneSetSummary}
                     isObs={isObs}
-                    displayName={field}
+                    displayName={isCellwhisperer ?
+                                 field.split('_').slice(1).join(' ') :
+                                 field}
                     hideRanges={asyncProps.isSingleValue}
                     rangeMin={asyncProps.unclippedRange[0]}
                     rangeMax={asyncProps.unclippedRange[1]}

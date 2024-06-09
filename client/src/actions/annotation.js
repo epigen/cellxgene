@@ -5,8 +5,64 @@ import difference from "lodash.difference";
 import pako from "pako";
 import * as globals from "../globals";
 import { MatrixFBS, AnnotationsHelpers } from "../util/stateManager";
+import { isTypedArray } from "../util/typeHelpers";
 
 const { isUserAnnotation } = AnnotationsHelpers;
+
+export const annotationCreateContinuousAction =
+  (newContinuousName, values) => async (dispatch, getState) => {
+    /*
+  Add a new user-created continuous to the obs annotations.
+
+  Arguments:
+    newContinuousName - string name for the continuous.
+    continuousToDuplicate - obs continuous to use for initial values, or null.
+  */
+    const { annoMatrix: prevAnnoMatrix, obsCrossfilter: prevObsCrossfilter } =
+      getState();
+    if (!prevAnnoMatrix || !prevObsCrossfilter) return;
+    const { schema } = prevAnnoMatrix;
+
+    /* name must be a string,  non-zero length */
+    if (typeof newContinuousName !== "string" || newContinuousName.length === 0)
+      throw new Error("user annotations require string name");
+
+    if (!isTypedArray(values) || values.length === 0)
+      // TODO check for correct length
+      throw new Error(
+        `Provided values are of wrong format or length ${typeof values}, ${
+          values.length
+        }`
+      );
+
+    /* ensure the name isn't already in use! */
+    if (schema.annotations.obsByName[newContinuousName])
+      throw new Error("name collision on annotation continuous create");
+
+    const newSchema = {
+      name: newContinuousName,
+      type: "float32",
+      writable: false,
+    };
+
+    const obsCrossfilter = prevObsCrossfilter.addObsColumn(
+      newSchema,
+      values.constructor,
+      values
+    );
+
+    dispatch({
+      type: "annotation: create continuous",
+      data: newContinuousName,
+      annoMatrix: obsCrossfilter.annoMatrix,
+      obsCrossfilter,
+    });
+
+    dispatch({
+      type: "color by cellwhisperer search",
+      colorAccessor: newContinuousName,
+    });
+  };
 
 export const annotationCreateCategoryAction =
   (newCategoryName, categoryToDuplicate) => async (dispatch, getState) => {

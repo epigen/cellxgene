@@ -20,11 +20,12 @@ export CXG_SERVER_PORT := $(call env_or_else_default,CXG_SERVER_PORT)
 export CXG_CLIENT_PORT := $(call env_or_else_default,CXG_CLIENT_PORT)
 export CXG_OPTIONS := $(call env_or_else_default,CXG_OPTIONS)
 export DATASET := $(call full_path,$(call env_or_else_default,DATASET))
+export MODEL := $(call env_or_else_default,MODEL)
 export JEST_ENV := $(call env_or_else_default,JEST_ENV)
 
 .PHONY: start-server
 start-server:
-	cellxgene launch -p $(CXG_SERVER_PORT) $(CXG_OPTIONS) $(DATASET)
+	cellxgene launch -p $(CXG_SERVER_PORT) $(CXG_OPTIONS) $(DATASET) --cellwhisperer-clip-model $(MODEL)
 
 # copy the client assets to a location known to the server
 # $(1) is the source of the client assets

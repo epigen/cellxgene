@@ -6,6 +6,9 @@ import Logo from "../framework/logo";
 import Truncate from "../util/truncate";
 import InformationMenu from "./infoMenu";
 
+import cxgIcon from "../../images/icon_cxg.png";
+import cellwhispererIcon from "../../images/icon_cellwhisperer.png";
+
 const DATASET_TITLE_FONT_SIZE = 14;
 
 @connect((state) => {
@@ -48,46 +51,64 @@ class LeftSideBar extends React.Component {
         }}
       >
         <div>
-          <Logo size={28} />
-          <span
-            style={{
-              fontSize: 24,
-              position: "relative",
-              top: -6,
-              fontWeight: "bold",
-              marginLeft: 5,
-              color: globals.logoColor,
-              userSelect: "none",
-            }}
-          >
-            cell
+          <div>
+            <Logo size={28} alt="CELLxGENE Annotate Logo" src={cxgIcon} />
             <span
               style={{
-                position: "relative",
-                top: 1,
-                fontWeight: 300,
                 fontSize: 24,
+                position: "relative",
+                top: -6,
+                fontWeight: "bold",
+                marginLeft: 5,
+                color: globals.logoColor,
+                userSelect: "none",
               }}
             >
-              ×
+              cell
+              <span
+                style={{
+                  position: "relative",
+                  top: 1,
+                  fontWeight: 300,
+                  fontSize: 24,
+                }}
+              >
+                ×
+              </span>
+              gene
             </span>
-            gene
-          </span>
+          </div>
+          <div>
+            <Logo size={28} alt="CellWhisperer Logo" src={cellwhispererIcon} />
+            <span
+              style={{
+                fontSize: 24,
+                position: "relative",
+                top: -6,
+                fontWeight: "bold",
+                marginLeft: 5,
+                color: globals.logoColor,
+                userSelect: "none",
+              }}
+            >
+              CellWhisperer
+            </span>
+          </div>
         </div>
         <div style={{ marginRight: 5, height: "100%" }}>
-          <span
-            minimal
-            style={{
-              fontSize: DATASET_TITLE_FONT_SIZE,
-              padding: "5px 10px",
-            }}
-          >
-            <Truncate>
-              <span style={{ maxWidth: 155 }} data-testid="header">
-                {title ?? datasetTitle}
-              </span>
-            </Truncate>
-          </span>
+          {/* <span */}
+          {/*   minimal */}
+          {/*   style={{ */}
+          {/*     fontSize: DATASET_TITLE_FONT_SIZE, */}
+          {/*     padding: "5px 10px", */}
+          {/*   }} */}
+          {/* > */}
+          {/*   <Truncate> */}
+          {/*     <span style={{ maxWidth: 155 }} data-testid="header"> */}
+          {/*       {title ?? datasetTitle} */}
+          {/*     </span> */}
+          {/*   </Truncate> */}
+          {/* </span> */}
           <InformationMenu
             {...{
               libraryVersions,

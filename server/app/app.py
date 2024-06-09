@@ -8,15 +8,20 @@ from flask import (
     make_response,
     render_template,
     Blueprint,
+    Response,
     request,
     send_from_directory,
+    g,
 )
 from flask_restful import Api, Resource
+import json
+
 
 import server.common.rest as common_rest
 from server.common.errors import DatasetAccessError, RequestException
 from server.common.health import health_check
 from server.common.utils.utils import StrictJSONEncoder
+from server.app.request_id import generate_request_id, get_request_id
 
 webbp = Blueprint("webapp", "server.common.web", template_folder="templates")
 
@@ -167,6 +172,41 @@ class LayoutObsAPI(Resource):
         return common_rest.layout_obs_get(request, data_adaptor)
 
 
+class LLMEmbeddingsObsAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_obs_post(request, data_adaptor)
+
+
+class LLMEmbeddingsTextAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_text_post(request, data_adaptor)
+
+
+class LLMEmbeddingsChatAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_chat_post(request, data_adaptor)
+
+
+class LLMEmbeddingsFeedbackAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_feedback_post(request, data_adaptor)
+
+
+class LLMEmbeddingsInterpretationAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def post(self, data_adaptor):
+        return common_rest.llm_embeddings_gene_contributions_post(request, data_adaptor)
+
+
 class GenesetsAPI(Resource):
     @cache_control(public=True, max_age=ONE_WEEK)
     @rest_get_data_adaptor
@@ -222,6 +262,11 @@ def get_api_dataroot_resources(bp_dataroot):
     # Computation routes
     add_resource(DiffExpObsAPI, "/diffexp/obs")
     add_resource(LayoutObsAPI, "/layout/obs")
+    add_resource(LLMEmbeddingsObsAPI, "/llmembs/obs")
+    add_resource(LLMEmbeddingsTextAPI, "/llmembs/text")
+    add_resource(LLMEmbeddingsChatAPI, "/llmembs/chat")
+    add_resource(LLMEmbeddingsFeedbackAPI, "/llmembs/feedback")
+    add_resource(LLMEmbeddingsInterpretationAPI, "/llmembs/interpret")
     return api
 
 
@@ -265,3 +310,25 @@ class Server:
 
         self.app.data_adaptor = server_config.data_adaptor
         self.app.app_config = app_config
+
+        @self.app.before_request
+        def pre_request_logging():
+            g.request_id = generate_request_id()
+            message = json.dumps(dict(type="REQUEST", url=request.path, method=request.method, schema=request.scheme))
+            self.app.logger.info(message)
+
+        @self.app.after_request
+        def post_request_logging(response: Response):
+            message = json.dumps(
+                dict(
+                    status_code=response.status_code,
+                    content_length=response.content_length,
+                    url=request.path,
+                    method=request.method,
+                    schema=request.scheme,
+                    type="RESPONSE",
+                )
+            )
+            response.headers["X-Request-Id"] = get_request_id()
+            self.app.logger.info(message)
+            return response

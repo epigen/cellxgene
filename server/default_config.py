@@ -67,6 +67,10 @@ dataset:
     lfc_cutoff: 0.01
     top_n: 10
 
+  llmembs:
+    enable: true
+    gene_score_contribution_enable: false
+    model_checkpoint: ~/cellwhisperer/results/models/jointemb/cellwhisperer_clip_v1.ckpt
   X_approximate_distribution: auto
 
 external:
