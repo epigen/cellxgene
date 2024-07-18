@@ -1,5 +1,5 @@
 import logging
-
+import math
 import os
 import json
 import pandas as pd
@@ -213,7 +213,14 @@ class CellWhispererWrapper:
         # Heuristic to get the top genes efficiently (computing it is infeasible, due to the (recommended) use of CSC matrices)
         # Equivalent to slower `pd.Series(df.values.ravel()).value_counts()`
         top_genes_df = adaptor.data.obsm["top_genes"][mask]
-        codes = np.concatenate([top_genes_df[col].cat.codes.values for col in top_genes_df.columns])
+        codes = np.concatenate(
+            [
+                np.repeat(
+                    top_genes_df[col].cat.codes.values, math.ceil(math.log2(100 - i))
+                )  # give top1 genes more weight than top 100 genes
+                for i, col in enumerate(top_genes_df.columns)
+            ]
+        )
         counts = np.bincount(codes, minlength=len(top_genes_df["Top_1"].cat.categories))
         category_counts = pd.Series(counts, index=top_genes_df[top_genes_df.columns[0]].cat.categories)
         n_top_genes = 50  # NOTE number of top genes to list should be configurable

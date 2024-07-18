@@ -71,7 +71,7 @@ class ChatSideBar extends React.Component {
         submitMessages = [];
         this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
       }
-      dispatch(actions.startChatRequest(submitMessages, inputText || "Describe the selected cells.", obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
+      dispatch(actions.startChatRequest(submitMessages, inputText || "Describe these cells in detail.", obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
     }
     this.setState({ inputText: "" }); // Clear the input after sending
   };
