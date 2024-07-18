@@ -119,6 +119,12 @@ const doInitialDataLoad = () =>
       ) {
         dispatch(embActions.layoutChoiceAction(defaultEmbedding));
       }
+      dispatch({
+        type: "color by categorical metadata",
+        colorAccessor: "cluster_label"  // NOTE could be made configurable
+      });
+
+
     } catch (error) {
       dispatch({ type: "initial data load error", error });
     }
