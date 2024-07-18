@@ -5,6 +5,7 @@ import actions from "../../actions";
 
 const INITIAL_TEMPERATURE = 0.0;
 const REGENERATE_TEMPERATURE = 1.0;
+const SEARCH_KEYWORD_REGEX = /^\s*(show me|show|search for|search|find)( all)?:?\s*/i;  // important to have the longer ones before the shorter overlapping ones
 
 function renderList(items) {
   return (
@@ -39,9 +40,11 @@ class ChatSideBar extends React.Component {
   buttonDisabled = () => {
     const { inputText, conversationSample } = this.state;
     const { obsCrossfilter, loading } = this.props;
+
+    const onlyKeywordRegex = new RegExp(SEARCH_KEYWORD_REGEX.source + "$", "i");
     return (
       (inputText.startsWith("/interpret") && !obsCrossfilter.countSelected()) ||
-      (inputText.startsWith("/search") && inputText.length <= "/search ".length) ||
+      (onlyKeywordRegex.test(inputText)) ||
       loading
     );
   };
@@ -53,8 +56,8 @@ class ChatSideBar extends React.Component {
       return;
     }
 
-    if (inputText.startsWith("/search")) {
-      const search = inputText.replace("/search", "").trim();
+    if (SEARCH_KEYWORD_REGEX.test(inputText)) {
+      const search = inputText.replace(SEARCH_KEYWORD_REGEX, "");
       dispatch(actions.requestEmbeddingLLMWithText(search));
     } else if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
       dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
@@ -110,7 +113,7 @@ class ChatSideBar extends React.Component {
     const { obsCrossfilter, enableGeneScoreContributions } = this.props;
 
     let action;
-    if (inputText.startsWith("/search")) {
+    if (SEARCH_KEYWORD_REGEX.test(inputText)) {
       action = "Search for cells";
     } else {
       if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
@@ -250,7 +253,7 @@ class ChatSideBar extends React.Component {
             value={inputText}
             fill
             onChange={this.handleInputChange}
-            placeholder="Type your request here and press <Enter>. For example: /search T cells"
+            placeholder="Type your request here and press <Enter>. For example: Show me T cells"
             onKeyDown={(e) => {
               if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText && !loading) {
                 this.inputSubmit();
