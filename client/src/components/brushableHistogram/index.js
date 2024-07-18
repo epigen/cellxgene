@@ -20,7 +20,7 @@ const MARGIN = {
   BOTTOM: 25, // space for X axis & labels
   TOP: 3,
 };
-const WIDTH = 340 - MARGIN.LEFT - MARGIN.RIGHT;
+const WIDTH = 300 - MARGIN.LEFT - MARGIN.RIGHT;
 const HEIGHT = 135 - MARGIN.TOP - MARGIN.BOTTOM;
 const MARGIN_MINI = {
   LEFT: 0, // Space for 0 tick label on X axis

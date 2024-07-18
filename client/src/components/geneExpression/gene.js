@@ -186,7 +186,7 @@ class Gene extends React.Component {
             />
           </div>
         </div>
-        {geneIsExpanded && <HistogramBrush isUserDefined field={gene} />}
+        {geneIsExpanded && <HistogramBrush isUserDefined width={400} field={gene} />}
       </div>
     );
   }
