@@ -238,7 +238,7 @@ def launch_args(func):
     @click.argument("datapath", required=False, metavar="<path to data file>")
     @click.option(
         "--cellwhisperer-clip-model",
-        default="https://cellwhisperer.bocklab.org/clip/api",
+        default="https://cellwhisperer.cemm.at/clip/api",
         required=False,
         metavar="<path to model checkpoint>",
     )
