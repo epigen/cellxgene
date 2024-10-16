@@ -31,6 +31,7 @@ class ChatSideBar extends React.Component {
       likedMessages: [],
     };
     this.messagesEndRef = React.createRef(); // Create a ref for the messages container
+    this.inputRef = React.createRef();
   }
 
   handleInputChange = (e) => {
@@ -76,6 +77,21 @@ class ChatSideBar extends React.Component {
     }
     this.setState({ inputText: "" }); // Clear the input after sending
   };
+
+  handleEdit = (messageId) => {
+    // This modifies the messages history and sets the 
+    const { dispatch, messages } = this.props;
+    const message = messages[messageId];
+    const messagesSlice = messages.slice(0, messageId);
+
+    dispatch(actions.resetChat(messagesSlice));
+    this.setState({ inputText: message.value }); // Set the input box to the selected message for editing
+
+    // focus the input 
+    if (this.inputRef.current) {
+      this.inputRef.current.focus();
+    }
+  }
 
   handleThumb = (messageId, thumbDirection) => {
     const { dispatch, messages } = this.props;
@@ -201,7 +217,24 @@ class ChatSideBar extends React.Component {
                     👎
                   </button>
                 </div>
-                : null
+                : <div>
+                  <button
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      opacity: 0.7,
+                      transition: "opacity 0.3s ease",
+                      padding: "3px",
+                      fontSize: "12pt"
+                    }}
+                    onClick={() => this.handleEdit(index)}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.7}
+                  >
+                    📝
+                  </button>
+                </div>
               }
             </div>
           </div>
@@ -252,6 +285,7 @@ class ChatSideBar extends React.Component {
         >
           <InputGroup
             value={inputText}
+            inputRef={this.inputRef}
             fill
             onChange={this.handleInputChange}
             placeholder="Type your request here and press <Enter>. For example: Show me T cells"

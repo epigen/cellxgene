@@ -51,7 +51,7 @@ const LLMEmbedding = (
       return {
         ...state,
         // Add an empty message to the end of the list of messages
-        messages:  [],
+        messages: action.newMessages || [],
         // error: null,
       };
     }

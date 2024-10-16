@@ -242,6 +242,13 @@ export const chatFeedback = (messages, cellSelection, thumbDirection) => async (
   }
 };
 
+/*
+  Action creator to reset the chat box
+*/
+
+export const resetChat = (newMessages) => async (dispatch) => {
+  dispatch({ type: "chat reset", newMessages });
+};
 
 
 /*
