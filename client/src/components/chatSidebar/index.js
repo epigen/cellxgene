@@ -58,6 +58,7 @@ class ChatSideBar extends React.Component {
 
     if (SEARCH_KEYWORD_REGEX.test(inputText)) {
       const search = inputText.replace(SEARCH_KEYWORD_REGEX, "");
+      dispatch({ type: "chat request start", newMessages: new Array({ from: "human", value: inputText }) });  // slight abuse, since we didn't start a real chat, but fair since it is all handled in here
       dispatch(actions.requestEmbeddingLLMWithText(search));
     } else if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
       dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
