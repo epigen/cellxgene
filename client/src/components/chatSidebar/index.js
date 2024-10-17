@@ -148,7 +148,7 @@ class ChatSideBar extends React.Component {
       const countSelected = obsCrossfilter.countSelected();
       const totalObs = obsCrossfilter.annoMatrix.nObs;
       const selectionLabel = countSelected === totalObs ? "all " + countSelected : "n=" + countSelected;
-      action = action + " the selected pseudocell (mean of " + selectionLabel + ")";
+      action = action + " selected cells (mean of " + selectionLabel + " cells)";
     }
     return action;
   };

@@ -105,7 +105,7 @@ export const requestEmbeddingLLMWithText =
         type: "embedding model annotation response from text",
       });
 
-      dispatch({ type: "chat request success", payload: `Sure, here you go. Cells colored in red match well with '${text}', while cells colored in white and blue don't match this query. Any questions about the current cell selection?` });
+      dispatch({ type: "chat request success", payload: `Here you go. Cells colored in red match well with '${text}', while cells colored in white and blue don't match this query. Select some cells to chat about them.` });
 
       return dispatch(annotationCreateContinuousAction(annotationName, col));
     } catch (error) {
