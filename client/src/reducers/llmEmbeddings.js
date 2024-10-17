@@ -47,6 +47,13 @@ const LLMEmbedding = (
       };
     }
 
+    case "chat loading finished": {
+      return {
+        ...state,
+        loading: false,
+      };
+    }
+
     case "chat reset": {
       return {
         ...state,
@@ -70,7 +77,6 @@ const LLMEmbedding = (
         ...state,
         // Replace the last entry of messages
         messages: state.messages.slice(0, -1).concat({ value: action.payload, from: "gpt" }),
-        loading: false,
         // error: null,
       };
     }

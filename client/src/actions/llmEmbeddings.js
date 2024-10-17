@@ -194,7 +194,7 @@ export const startChatRequest = (messages, prompt, cellSelection, temperature) =
 
       dispatch({ type: "chat request success", payload: data.text });
     }
-
+    dispatch({ type: "chat loading finished" });
   } catch (error) {
     dispatch({ type: "chat request failure", payload: error.message });
   }
