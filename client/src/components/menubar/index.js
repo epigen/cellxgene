@@ -233,8 +233,8 @@ class MenuBar extends React.PureComponent {
       >
         <UndoRedoReset
           dispatch={dispatch}
-          undoDisabled={undoDisabled}
-          redoDisabled={redoDisabled}
+          undoDisabled={true}
+          redoDisabled={true}
         />
         <Clip
           pendingClipPercentiles={pendingClipPercentiles}
