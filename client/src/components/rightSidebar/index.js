@@ -2,6 +2,7 @@ import React from "react";
 import { connect } from "react-redux";
 import GeneExpression from "../geneExpression";
 import ChatSideBar from "../chatSidebar";
+import { H4 } from "@blueprintjs/core";
 import * as globals from "../../globals";
 
 @connect((state) => ({
@@ -26,6 +27,13 @@ class RightSidebar extends React.Component {
         }}
       >
         <GeneExpression />
+
+        <H4
+          role="menuitem"
+          tabIndex="0"
+        >
+          CellWhisperer
+        </H4>
         <ChatSideBar />
       </div>
     );
