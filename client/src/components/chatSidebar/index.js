@@ -54,20 +54,33 @@ class ChatSideBar extends React.Component {
   inputSubmit = () => {
     const { dispatch, obsCrossfilter, messages, enableGeneScoreContributions } = this.props;
     const { inputText, conversationSample } = this.state;
+    const countSelected = obsCrossfilter.countSelected();
+    const totalObs = obsCrossfilter.annoMatrix.nObs;
+    let submitMessages = messages;
+
     if (this.buttonDisabled()) {
       return;
     }
 
-    if (SEARCH_KEYWORD_REGEX.test(inputText)) {
+    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs) {
       const search = inputText.replace(SEARCH_KEYWORD_REGEX, "");
-      dispatch({ type: "chat request start", newMessages: new Array({ from: "human", value: inputText }) });  // slight abuse, since we didn't start a real chat, but fair since it is all handled in here
       dispatch(actions.requestEmbeddingLLMWithText(search));
+
+      let chatMessage = inputText;
+      if (!SEARCH_KEYWORD_REGEX.test(inputText))
+        chatMessage = `(Show me) ${inputText}`;
+
+      // Test if messages is an array
+      if (!Array.isArray(messages)) {
+        submitMessages = [];
+      }
+
+      let newMessages = submitMessages.concat({from: "human", value: chatMessage });
+      dispatch({ type: "chat request start", newMessages });  // slight abuse, since we didn't start a real chat, but fair since it is all handled in here
     } else if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
       dispatch(actions.geneContributionRequest(inputText, obsCrossfilter.allSelectedLabels()));
     } else {
       // Dispatch the action to send the message
-      let submitMessages = messages;
-
 
       // Test if conversationSample changed
       if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) || inputText === "") {
@@ -129,9 +142,11 @@ class ChatSideBar extends React.Component {
   buttonText = () => {
     const { inputText, conversationSample } = this.state;
     const { obsCrossfilter, enableGeneScoreContributions } = this.props;
+    const countSelected = obsCrossfilter.countSelected();
+    const totalObs = obsCrossfilter.annoMatrix.nObs;
 
     let action;
-    if (SEARCH_KEYWORD_REGEX.test(inputText)) {
+    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs) {
       action = "Search for cells";
     } else {
       if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
@@ -145,8 +160,6 @@ class ChatSideBar extends React.Component {
         action = isNewSelection ? "Chat about" : "Continue chat about";
       }
 
-      const countSelected = obsCrossfilter.countSelected();
-      const totalObs = obsCrossfilter.annoMatrix.nObs;
       const selectionLabel = countSelected === totalObs ? "all " + countSelected : "n=" + countSelected;
       action = action + " selected cells (mean of " + selectionLabel + " cells)";
     }
