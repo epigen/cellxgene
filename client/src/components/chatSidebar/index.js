@@ -42,9 +42,12 @@ class ChatSideBar extends React.Component {
   buttonDisabled = () => {
     const { inputText, conversationSample } = this.state;
     const { obsCrossfilter, loading } = this.props;
+    const countSelected = obsCrossfilter.countSelected();
+    const totalObs = obsCrossfilter.annoMatrix.nObs;
 
     const onlyKeywordRegex = new RegExp(SEARCH_KEYWORD_REGEX.source + "$", "i");
     return (
+      (inputText === "" && (countSelected === 0 || countSelected === totalObs)) ||
       (inputText.startsWith("/interpret") && !obsCrossfilter.countSelected()) ||
       (onlyKeywordRegex.test(inputText)) ||
       loading
@@ -56,13 +59,20 @@ class ChatSideBar extends React.Component {
     const { inputText, conversationSample } = this.state;
     const countSelected = obsCrossfilter.countSelected();
     const totalObs = obsCrossfilter.annoMatrix.nObs;
-    let submitMessages = messages;
 
     if (this.buttonDisabled()) {
       return;
     }
 
-    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs) {
+    let submitMessages = messages;
+
+    // Test if conversationSample changed or whether the chat is empty
+    if (!Array.isArray(messages) || JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) || inputText === "") {
+      submitMessages = [];
+      this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
+    }
+
+    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs || countSelected === 0) {
       const search = inputText.replace(SEARCH_KEYWORD_REGEX, "");
       dispatch(actions.requestEmbeddingLLMWithText(search));
 
@@ -70,10 +80,6 @@ class ChatSideBar extends React.Component {
       if (!SEARCH_KEYWORD_REGEX.test(inputText))
         chatMessage = `(Show me) ${inputText}`;
 
-      // Test if messages is an array
-      if (!Array.isArray(messages)) {
-        submitMessages = [];
-      }
 
       let newMessages = submitMessages.concat({from: "human", value: chatMessage });
       dispatch({ type: "chat request start", newMessages });  // slight abuse, since we didn't start a real chat, but fair since it is all handled in here
@@ -82,11 +88,6 @@ class ChatSideBar extends React.Component {
     } else {
       // Dispatch the action to send the message
 
-      // Test if conversationSample changed
-      if (JSON.stringify(conversationSample) !== JSON.stringify(obsCrossfilter.allSelectedLabels()) || inputText === "") {
-        submitMessages = [];
-        this.setState({ conversationSample: obsCrossfilter.allSelectedLabels(), likedMessages: [] });
-      }
       dispatch(actions.startChatRequest(submitMessages, inputText || "Describe these cells in detail.", obsCrossfilter.allSelectedLabels(), INITIAL_TEMPERATURE));
     }
     this.setState({ inputText: "" }); // Clear the input after sending
@@ -146,7 +147,7 @@ class ChatSideBar extends React.Component {
     const totalObs = obsCrossfilter.annoMatrix.nObs;
 
     let action;
-    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs) {
+    if (SEARCH_KEYWORD_REGEX.test(inputText) || countSelected === totalObs || countSelected === 0) {
       action = "Search for cells";
     } else {
       if (inputText.startsWith("/interpret") && enableGeneScoreContributions) {
@@ -305,7 +306,7 @@ class ChatSideBar extends React.Component {
             onChange={this.handleInputChange}
             placeholder="Type your request here and press <Enter>. For example: Show me T cells"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && obsCrossfilter.countSelected() > 0 && inputText && !loading) {
+              if (e.key === "Enter" && !this.buttonDisabled()) {
                 this.inputSubmit();
               }
             }}
