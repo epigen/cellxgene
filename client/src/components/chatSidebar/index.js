@@ -22,6 +22,7 @@ function renderList(items) {
   obsCrossfilter: state.obsCrossfilter,
   enableGeneScoreContributions: state.config?.parameters?.["enable-llmembs_gene_score_contribution"] ?? false,
 }))
+
 class ChatSideBar extends React.Component {
   constructor(props) {
     super(props);
@@ -231,6 +232,7 @@ class ChatSideBar extends React.Component {
                     onClick={() => this.handleEdit(index)}
                     onMouseOver={(e) => e.currentTarget.style.opacity = 1}
                     onMouseOut={(e) => e.currentTarget.style.opacity = 0.7}
+                    disabled={this.buttonDisabled()}
                   >
                     📝
                   </button>
