@@ -9,10 +9,10 @@ const InformationMenu = React.memo((props) => {
       content={
         <Menu>
           <MenuItem
-            href="https://biorxiv.org/"
+            href="https://www.biorxiv.org/content/10.1101/2024.10.15.618501v1"
             target="_blank"
             icon="document"
-            text="CellWhisperer paper (TBD)"
+            text="CellWhisperer paper"
             rel="noopener"
           />
           <MenuItem
