@@ -26,7 +26,13 @@ const InformationMenu = React.memo((props) => {
             href="https://github.com/epigen/cellwhisperer/issues"
             target="_blank"
             icon="chat"
-            text="Feedback"
+            text="Feedback (GitHub)"
+            rel="noopener"
+          />
+          <MenuItem
+            href="mailto:cellwhisperer@bocklab.org"
+            icon="at"
+            text="Feedback (Email)"
             rel="noopener"
           />
           <MenuItem
