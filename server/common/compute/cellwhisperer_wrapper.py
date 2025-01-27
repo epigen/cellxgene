@@ -54,7 +54,6 @@ class CellWhispererWrapper:
         adaptor: Access to the adata object
         """
         logger.info("Preprocessing data for LLM embeddings, making sure it's fast")
-        return  # just for testing
 
         # Make sure that all the zero-shot class terms are embedded
         mask = np.zeros(adaptor.data.shape[0], dtype=bool)
