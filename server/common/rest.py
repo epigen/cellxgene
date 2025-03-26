@@ -5,8 +5,13 @@ from http import HTTPStatus
 import zlib
 import json
 
-from flask import make_response, jsonify, current_app, abort, stream_with_context
+from flask import make_response, jsonify, current_app, abort, stream_with_context, send_file
 from urllib.parse import unquote
+from base64 import b64decode
+from PIL import Image
+import io
+import math
+import numpy as np
 
 from server.common.config.client_config import get_client_config
 from server.common.constants import Axis, DiffExpMode, JSON_NaN_to_num_warning_msg
@@ -25,6 +30,46 @@ from server.common.errors import (
 from server.common.genesets import summarizeQueryHash
 from server.common.fbs.matrix import decode_matrix_fbs
 
+def get_image_spatial(request, data_adaptor):
+    try:
+        image_data = data_adaptor.get_image_data()
+    except KeyError: # No image data in slot.
+        # This is a 1px transparent gif.
+        buffer = io.BytesIO(b64decode("R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAIBAAA="))
+        buffer.seek(0)
+        response = send_file(buffer, mimetype="image/gif")
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+    
+    try:
+        view_x = int(request.args['view_x'])
+    except ValueError:
+        view_x = 462
+    try:
+        view_y = int(request.args['view_y'])
+    except ValueError:
+        view_y = 932
+    try:
+        scale_factor = float(request.args['scale_factor'])
+    except ValueError:
+        scale_factor = 1
+
+    original_aspect = image_data.shape[0] / image_data.shape[1]
+    sample_x = max(math.floor(image_data.shape[0] / (scale_factor * view_x)), 1)
+    #sample_y = max(math.floor(image_data.shape[1] / (scale_factor * view_y)), 1)
+    #preserve the aspect ratio
+    sample_y = max(math.floor(image_data.shape[1] / (scale_factor * (view_x * original_aspect))), 1)
+
+    down_sampled = image_data[::sample_x,::sample_y]
+    down_sampled = np.swapaxes(down_sampled, 0, 1)
+
+    img = Image.fromarray(down_sampled)        
+    buffer = io.BytesIO()
+    img.save(buffer, 'png')
+    buffer.seek(0)
+    response = send_file(buffer, mimetype="image/png")
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 def abort_and_log(code, logmsg, loglevel=logging.DEBUG, include_exc_info=False):
     """

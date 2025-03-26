@@ -400,7 +400,15 @@ class DataAdaptor(metaclass=ABCMeta):
         with ServerTiming.time("layout.query"):
             for ename in embeddings:
                 embedding = self.get_embedding_array(ename, 2)
-                normalized_layout = DataAdaptor.normalize_embedding(embedding)
+                # If this is a spatial dataset, the scaling needs to be to pixel space, not point space.
+                print("NAME IS WHAT: ", ename)
+                if ename == "spatial":
+                    print(self.get_spatial_extent())
+                    normalized_layout = embedding / self.get_spatial_extent()
+                    
+                    normalized_layout = normalized_layout.astype(dtype=np.float32)
+                else:
+                    normalized_layout = DataAdaptor.normalize_embedding(embedding)
                 layout_data.append(pd.DataFrame(normalized_layout, columns=[f"{ename}_0", f"{ename}_1"]))
 
         with ServerTiming.time("layout.encode"):
