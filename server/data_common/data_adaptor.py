@@ -401,7 +401,6 @@ class DataAdaptor(metaclass=ABCMeta):
             for ename in embeddings:
                 embedding = self.get_embedding_array(ename, 2)
                 # If this is a spatial dataset, the scaling needs to be to pixel space, not point space.
-                print("NAME IS WHAT: ", ename)
                 if ename == "spatial":
                     print(self.get_spatial_extent())
                     normalized_layout = embedding / self.get_spatial_extent()
