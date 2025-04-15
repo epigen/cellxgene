@@ -20,6 +20,8 @@ from server.common.utils.type_conversion_utils import get_schema_type_hint_of_ar
 from server.data_common.data_adaptor import DataAdaptor
 from server.common.fbs.matrix import encode_matrix_fbs
 
+# Update when factoring out 20x slide to next level.
+import math
 
 anndata_version = version.parse(str(anndata.__version__)).release
 
@@ -458,7 +460,13 @@ class AnndataAdaptor(DataAdaptor):
     def get_obs_keys(self):
         # return list of keys
         return self.data.obs.keys().to_list()
-
+    
+    def get_image_data(self):
+        return self.data.uns['20x_slide']
+    
+    def get_spatial_extent(self):
+        return self.data.uns["image_extents"]
+    
     def get_var_keys(self):
         # return list of keys
         return self.data.var.keys().to_list()
