@@ -117,8 +117,7 @@ if (typeof window !== "undefined" && window.CELLXGENE && window.CELLXGENE.API) {
     // prefix: "http://api-staging.clustering.czi.technology/api/",
     // prefix: `http://s0-n11.hpc.meduniwien.ac.at:${CXG_SERVER_PORT}/api/`,
     // prefix: `http://localhost:${CXG_SERVER_PORT}/api/`,
-    // prefix: `https://cellwhisperer.cemm.at/colonic_epithelium/api/`,
-    prefix: `http://d014.int.cemm.at:5005/api/`,
+    prefix: `https://cellwhisperer.cemm.at/colonic_epithelium/api/`,
     version: "v0.2/",
   };
 }
