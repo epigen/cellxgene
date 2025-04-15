@@ -206,6 +206,11 @@ class LLMEmbeddingsInterpretationAPI(Resource):
     def post(self, data_adaptor):
         return common_rest.llm_embeddings_gene_contributions_post(request, data_adaptor)
 
+class SpatialImageAPI(Resource):
+    @cache_control(no_store=True)
+    @rest_get_data_adaptor
+    def get(self, data_adaptor):
+        return common_rest.spatial_image_get(request, data_adaptor)
 
 class GenesetsAPI(Resource):
     @cache_control(public=True, max_age=ONE_WEEK)
@@ -257,6 +262,7 @@ def get_api_dataroot_resources(bp_dataroot):
     add_resource(DataVarAPI, "/data/var")
     add_resource(GenesetsAPI, "/genesets")
     add_resource(SummarizeVarAPI, "/summarize/var")
+    add_resource(SpatialImageAPI, "/spatial/image")
     # Display routes
     add_resource(ColorsAPI, "/colors")
     # Computation routes

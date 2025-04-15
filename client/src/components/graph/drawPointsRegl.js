@@ -39,6 +39,8 @@ export default function drawPointsRegl(regl) {
 
       float alpha = isBackground ? 0.9 : 1.0;
       fragColor = vec4(color, alpha);
+      // Make more trasparent for spatial to see image.
+      // fragColor = vec4(color, 0.8);
     }`,
 
     frag: `
