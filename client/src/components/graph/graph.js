@@ -265,7 +265,7 @@ class Graph extends React.Component {
 
   componentDidMount() {
     window.addEventListener("resize", this.handleResize);
-    this.imgElement = document.getElementById('hande');
+    this.imgElement = document.getElementById('h_and_e');
     this.imgElement.onload = this.handleImageLoad; // Add this line
   }
 
@@ -278,24 +278,6 @@ class Graph extends React.Component {
         this.texture = this.state.regl.texture(this.imgElement); // Create texture if it doesn't exist
       }
     }
-    console.log("Force redraw of image now!")
-    /*regl.clear({
-      color: [1, 1, 1, 1],
-      //depth: 1
-    });*/
-    /*
-    this.renderImage(
-      regl, camera, projectionTF
-    );
-    this.renderPoints(
-      regl,
-      drawPoints,
-      colorBuffer,
-      pointBuffer,
-      flagBuffer,
-      camera,
-      projectionTF
-    ); */
     this.renderCanvas(); // redraw everything else.
   };
 
@@ -916,7 +898,7 @@ class Graph extends React.Component {
 
         uniforms: {
           color: [0, 1, 0, 1],
-          texture: this.texture, //regl.texture(document.getElementById('hande')),
+          texture: this.texture, //regl.texture(document.getElementById('h_and_e')),
           projView: projView,
           z: 0.99, // 0.99 is background, see drawPointsRegl.js
         },
@@ -1029,7 +1011,7 @@ class Graph extends React.Component {
           onDoubleClick={this.handleCanvasEvent}
           onWheel={this.handleCanvasEvent}
         />
-        <img id="hande" crossOrigin="" style={{display: 'none' }} src={imageUrl} onLoad={this.handleImageLoad}></img>
+        <img id="h_and_e" crossOrigin="" style={{display: 'none' }} src={imageUrl} onLoad={this.handleImageLoad}></img>
         <Async
           watchFn={Graph.watchAsync}
           promiseFn={this.fetchAsyncProps}
