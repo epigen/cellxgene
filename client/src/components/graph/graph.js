@@ -5,7 +5,7 @@ import { mat3, vec2 } from "gl-matrix";
 import _regl from "regl";
 import memoize from "memoize-one";
 import Async from "react-async";
-import { Button } from "@blueprintjs/core";
+import { Button, NonIdealState } from "@blueprintjs/core";
 
 import setupSVGandBrushElements from "./setupSVGandBrush";
 import _camera from "../../util/camera";
@@ -214,11 +214,13 @@ class Graph extends React.Component {
     this.reglCanvas = null;
     this.cachedAsyncProps = null;
     const modelTF = createModelTF();
+    this.texture = null; // Initialize texture
     this.state = {
       toolSVG: null,
       tool: null,
       container: null,
       viewport,
+      imageUrl: this.createImageUrl(viewport.width, viewport.height),
 
       // projection
       camera: null,
@@ -251,9 +253,33 @@ class Graph extends React.Component {
     };
   }
 
+  // Create image URL based on width and height
+  createImageUrl(width, height) {
+    // the `scale_factor` parameter controls the amount of downsampling that is performed server-side
+    // before the image is sent to the browser. For h5ad files which contain an image which is not 
+    // suitably downsampled this could result in sending a very large file and lead to the network request
+    // timing out. In future some adaptive use of this parameter can be used to get the best resolution image
+    // for a given display scenario. To debug use Chrome Dev Tools to check requests.
+    return globals.API.prefix + globals.API.version + `spatial/image?view_x=${width}&view_y=${height}&scale_factor=1`;
+  }
+
   componentDidMount() {
     window.addEventListener("resize", this.handleResize);
+    this.imgElement = document.getElementById('h_and_e');
+    this.imgElement.onload = this.handleImageLoad; // Add this line
   }
+
+  handleImageLoad = () => {
+    // Check if the regl instance and imgElement are available
+    if (this.state.regl && this.imgElement) {
+      if (this.texture) {
+        this.texture(this.imgElement); // Update existing texture
+      } else {
+        this.texture = this.state.regl.texture(this.imgElement); // Create texture if it doesn't exist
+      }
+    }
+    this.renderCanvas(); // redraw everything else.
+  };
 
   componentDidUpdate(prevProps, prevState) {
     const { selectionTool, currentSelection, graphInteractionMode } =
@@ -295,10 +321,21 @@ class Graph extends React.Component {
       // eslint-disable-next-line react/no-did-update-set-state --- Preventing update loop via stateChanges and diff checks
       this.setState(stateChanges);
     }
+
+    // Update image URL if width or height changes
+    if (prevState.viewport.width !== viewport.width || prevState.viewport.height !== viewport.height) {
+      this.setState({
+        imageUrl: this.createImageUrl(viewport.width, viewport.height),
+      });
+    }
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleResize);
+    // Clean up texture if necessary
+    if (this.texture) {
+      this.texture.destroy(); // Or any necessary cleanup depending on your REG-GL wrapper
+    }
   }
 
   handleResize = () => {
@@ -722,6 +759,14 @@ class Graph extends React.Component {
       camera,
       projectionTF,
     } = this.state;
+    // Clear the depth buffer to ensure we can render both the image and points correctly
+    /* regl.clear({
+      color: [1, 0, 0, 1],
+      depth: -1,
+    }); */
+    this.renderImage(
+      regl, camera, projectionTF
+    );
     this.renderPoints(
       regl,
       drawPoints,
@@ -731,6 +776,7 @@ class Graph extends React.Component {
       camera,
       projectionTF
     );
+    
   });
 
   updateReglAndRender(asyncProps, prevAsyncProps) {
@@ -790,6 +836,76 @@ class Graph extends React.Component {
     return createColorQuery(colorMode, colorAccessor, schema, genesets);
   }
 
+  renderImage(
+      regl,
+      camera,
+      projectionTF,
+    ) {
+    const cameraTF = camera.view();
+    const projView = mat3.multiply(mat3.create(), projectionTF, cameraTF);
+    if (this.texture) {
+
+      regl.poll();
+      regl({
+
+        // In a draw call, we can pass the shader source code to regl
+        frag: `
+        precision mediump float;
+        uniform vec4 color;
+        uniform vec2 position;
+
+        //***
+        uniform sampler2D texture;
+        varying vec2 uv;
+        //***
+
+        void main () {
+          //gl_FragColor = vec4(mod(gl_FragCoord.x, 2), 1, 1, 1); //color;
+          //gl_FragColor = color;
+          //uv = position;
+          vec2 invertedUV = vec2(uv.x, 1.0 - uv.y); // Flip the v coordinate
+          gl_FragColor = texture2D(texture, uv); //invertedUV);
+        }`,
+
+        vert: `
+        precision mediump float;
+        attribute vec2 position;
+        uniform float z;
+
+        //***
+        varying vec2 uv;
+        uniform mat3 projView;
+        //***
+
+        void main () {
+          vec3 xy = projView * vec3(position, 1.);
+          gl_Position = vec4(xy.xy, z, 1.);
+          uv = (position + 1.0) * 0.5; // Convert position (-1, 1) to (0, 1)
+          // gl_Position = vec4(position, 0, 1);
+        }`,
+
+        attributes: {
+          position: [
+            [-1, -1],
+            [1, -1],
+            [1, 1],
+            [-1, 1]
+          ]
+        },
+
+        uniforms: {
+          color: [0, 1, 0, 1],
+          texture: this.texture, //regl.texture(document.getElementById('h_and_e')),
+          projView: projView,
+          z: 0.99, // 0.99 is background, see drawPointsRegl.js
+        },
+        primitive: 'triangle fan',
+        count: 4
+      })()
+      regl._gl.flush();
+    }
+  }
+
   renderPoints(
     regl,
     drawPoints,
@@ -807,10 +923,10 @@ class Graph extends React.Component {
     const projView = mat3.multiply(mat3.create(), projectionTF, cameraTF);
     const { width, height } = this.reglCanvas;
     regl.poll();
-    regl.clear({
+    /*regl.clear({
       depth: 1,
       color: [1, 1, 1, 1],
-    });
+    }); */
     drawPoints({
       distance: camera.distance(),
       color: colorBuffer,
@@ -833,7 +949,7 @@ class Graph extends React.Component {
       pointDilation,
       crossfilter,
     } = this.props;
-    const { modelTF, projectionTF, camera, viewport, regl } = this.state;
+    const { modelTF, projectionTF, camera, viewport, imageUrl, regl } = this.state;
     const cameraTF = camera?.view()?.slice();
 
     return (
@@ -891,7 +1007,7 @@ class Graph extends React.Component {
           onDoubleClick={this.handleCanvasEvent}
           onWheel={this.handleCanvasEvent}
         />
-
+        <img id="h_and_e" crossOrigin="" style={{display: 'none' }} src={imageUrl} onLoad={this.handleImageLoad}></img>
         <Async
           watchFn={Graph.watchAsync}
           promiseFn={this.fetchAsyncProps}
