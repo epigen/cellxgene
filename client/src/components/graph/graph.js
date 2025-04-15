@@ -255,8 +255,11 @@ class Graph extends React.Component {
 
   // Create image URL based on width and height
   createImageUrl(width, height) {
-    // larger scale factors may cause the image request to timeout resulting
-    // in no image being shown. Use Chrome Dev Tools to check requests.
+    // the `scale_factor` parameter controls the amount of downsampling that is performed server-side
+    // before the image is sent to the browser. For h5ad files which contain an image which is not 
+    // suitably downsampled this could result in sending a very large file and lead to the network request
+    // timing out. In future some adaptive use of this parameter can be used to get the best resolution image
+    // for a given display scenario. To debug use Chrome Dev Tools to check requests.
     return globals.API.prefix + globals.API.version + `spatial/image?view_x=${width}&view_y=${height}&scale_factor=1`;
   }
 
