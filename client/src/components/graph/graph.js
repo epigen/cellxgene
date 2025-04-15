@@ -759,7 +759,6 @@ class Graph extends React.Component {
       camera,
       projectionTF,
     } = this.state;
-    console.log("RENDER CANVAS CALL NOW!")
     // Clear the depth buffer to ensure we can render both the image and points correctly
     /* regl.clear({
       color: [1, 0, 0, 1],
@@ -801,7 +800,6 @@ class Graph extends React.Component {
       flagBuffer({ data: flags, dimension: 1 });
       needToRenderCanvas = true;
     }
-    if (needToRenderCanvas) console.log("NEED TO RENDER CANVAS");
     if (needToRenderCanvas) this.renderCanvas();
   }
 
@@ -843,7 +841,6 @@ class Graph extends React.Component {
       camera,
       projectionTF,
     ) {
-    console.log("RENDER IMAGE CALL NOW!");
     const cameraTF = camera.view();
     const projView = mat3.multiply(mat3.create(), projectionTF, cameraTF);
     if (this.texture) {
@@ -918,7 +915,6 @@ class Graph extends React.Component {
     camera,
     projectionTF
   ) {
-    console.log("RENDER POINTS CALL NOW");
     const { annoMatrix } = this.props;
     if (!this.reglCanvas || !annoMatrix) return;
 
