@@ -30,7 +30,7 @@ from server.common.errors import (
 from server.common.genesets import summarizeQueryHash
 from server.common.fbs.matrix import decode_matrix_fbs
 
-def get_image_spatial(request, data_adaptor):
+def spatial_image_get(request, data_adaptor):
     try:
         image_data = data_adaptor.get_image_data()
     except KeyError: # No image data in slot.
