@@ -220,7 +220,7 @@ class Graph extends React.Component {
       tool: null,
       container: null,
       viewport,
-      imageUrl: this.createImageUrl(viewport.width, viewport.height),
+      imageUrl: "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAIBAAA=",
 
       // projection
       camera: null,
@@ -254,13 +254,19 @@ class Graph extends React.Component {
   }
 
   // Create image URL based on width and height
-  createImageUrl(width, height) {
-    // the `scale_factor` parameter controls the amount of downsampling that is performed server-side
-    // before the image is sent to the browser. For h5ad files which contain an image which is not 
-    // suitably downsampled this could result in sending a very large file and lead to the network request
-    // timing out. In future some adaptive use of this parameter can be used to get the best resolution image
-    // for a given display scenario. To debug use Chrome Dev Tools to check requests.
-    return globals.API.prefix + globals.API.version + `spatial/image?view_x=${width}&view_y=${height}&scale_factor=1`;
+  createImageUrl(width, height, layout_type) {
+    if (layout_type === "spatial") {
+      // the `scale_factor` parameter controls the amount of downsampling that is performed server-side
+      // before the image is sent to the browser. For h5ad files which contain an image which is not 
+      // suitably downsampled this could result in sending a very large file and lead to the network request
+      // timing out. In future some adaptive use of this parameter can be used to get the best resolution image
+      // for a given display scenario. To debug use Chrome Dev Tools to check requests.
+      return globals.API.prefix + globals.API.version + `spatial/image?view_x=${width}&view_y=${height}&scale_factor=1`;
+    } else {
+        // have to have something otherwise onLoad is not fired (i.e., can't set src='')
+        // this is a 1px transparent gif.
+        return "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAIBAAA=";
+    } 
   }
 
   componentDidMount() {
@@ -282,7 +288,7 @@ class Graph extends React.Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const { selectionTool, currentSelection, graphInteractionMode } =
+    const { selectionTool, currentSelection, graphInteractionMode, layoutChoice } =
       this.props;
     const { toolSVG, viewport } = this.state;
     const hasResized =
@@ -321,12 +327,13 @@ class Graph extends React.Component {
       // eslint-disable-next-line react/no-did-update-set-state --- Preventing update loop via stateChanges and diff checks
       this.setState(stateChanges);
     }
-
     // Update image URL if width or height changes
-    if (prevState.viewport.width !== viewport.width || prevState.viewport.height !== viewport.height) {
-      this.setState({
-        imageUrl: this.createImageUrl(viewport.width, viewport.height),
-      });
+    // But don't show an image if we are not supposed to show the spatial embedding ('layout')
+    if (prevState.viewport.width !== viewport.width || prevState.viewport.height !== viewport.height || 
+      (prevProps.layoutChoice?.current != layoutChoice?.current)) {
+          this.setState({
+            imageUrl: this.createImageUrl(viewport.width, viewport.height, layoutChoice?.current),
+          });
     }
   }
 
