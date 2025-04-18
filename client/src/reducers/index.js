@@ -1,6 +1,7 @@
 import { createStore, applyMiddleware } from "redux";
 import thunk from "redux-thunk";
 
+import { demoStateMap } from "../globals";
 import cascadeReducers from "./cascade";
 import undoable from "./undoable";
 import config from "./config";
@@ -23,6 +24,11 @@ import llmEmbeddings from "./llmEmbeddings";
 import { gcMiddleware as annoMatrixGC } from "../annoMatrix";
 
 import undoableConfig from "./undoableConfig";
+
+const getInitialState = (stateName) => JSON.parse(demoStateMap[stateName] || demoStateMap.default);
+
+const urlHash = window.location.hash.slice(1); // Extract hash without '#'
+const initialState = getInitialState(urlHash);
 
 const Reducer = undoable(
   cascadeReducers([
@@ -62,6 +68,6 @@ const Reducer = undoable(
   undoableConfig
 );
 
-const store = createStore(Reducer, applyMiddleware(thunk, annoMatrixGC));
+const store = createStore(Reducer, initialState, applyMiddleware(thunk, annoMatrixGC));
 
 export default store;

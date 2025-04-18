@@ -122,4 +122,11 @@ if (typeof window !== "undefined" && window.CELLXGENE && window.CELLXGENE.API) {
   };
 }
 
+export const demoStateMap = {
+  default: '{}', // Define your default initial state here
+  injected: '{"config":{"displayNames":null,"features":null,"parameters":null},"annoMatrix":null,"obsCrossfilter":null,"annotations":{"dataCollectionNameIsReadOnly":true,"dataCollectionName":null,"isEditingCategoryName":false,"isEditingLabelName":false,"categoryBeingEdited":null,"categoryAddingNewLabel":null,"labelEditable":{"category":null,"label":null},"promptForFilename":true},"genesets":{"initialized":false,"genesets":{}},"genesetsUI":{"createGenesetModeActive":false,"isEditingGenesetName":false,"isAddingGenesToGeneset":false},"layoutChoice":{"available":[],"currentDimNames":[]},"continuousSelection":{},"graphSelection":{"tool":"lasso","selection":{"mode":"all"}},"colors":{"colorMode":null,"colorAccessor":null},"controls":{"loading":true,"error":null,"userDefinedGenes":[],"userDefinedGenesLoading":false,"resettingInterface":false,"graphInteractionMode":"select","opacityForDeselectedCells":0.2,"scatterplotXXaccessor":null,"scatterplotYYaccessor":null,"graphRenderCounter":0},"differential":{"loading":null,"error":null,"celllist1":null,"celllist2":null},"centroidLabels":{"showLabels":true},"pointDilation":{"metadataField":"","categoryField":""},"autosave":{"obsAnnotationSaveInProgress":false,"lastSavedAnnoMatrix":null,"genesetSaveInProgress":false,"lastSavedGenesets":null,"error":false},"llmEmbeddings":{"messages":"injected","loading":false,"cellwhispererSearches":[]},"@@undoable/past":[],"@@undoable/future":[],"@@undoable/filterState":{"prevAction":{"type":"@@redux/INITe.0.s.i.n.p"}},"@@undoable/pending":null}'
+}
+
+
+
 export const API = _API;
