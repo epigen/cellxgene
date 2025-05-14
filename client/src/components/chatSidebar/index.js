@@ -5,7 +5,7 @@ import actions from "../../actions";
 
 const INITIAL_TEMPERATURE = 0.0;
 const REGENERATE_TEMPERATURE = 1.0;
-const SEARCH_KEYWORD_REGEX = /^\s*(show me|show|search for|search|find)( all)?( (samples|cells) (from|of|that|which))?:?\s*/i;  // important to have the longer ones before the shorter overlapping ones
+const SEARCH_KEYWORD_REGEX = /^\s*(show me|show|search for|search|find|which of these)( all)?( (samples|cells) (from|of|that|which|are))?:?\s*/i;  // important to have the longer ones before the shorter overlapping ones
 
 function renderList(items) {
   return (
