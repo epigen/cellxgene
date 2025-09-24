@@ -39,8 +39,6 @@ class AnndataAdaptor(DataAdaptor):
         self._validate_and_initialize()
         self.cellwhisperer = CellWhispererWrapper(self.dataset_config.llmembs__model_checkpoint)
 
-        self.cellwhisperer.preprocess_data(self)  # required to cache all the keywords
-
     def cleanup(self):
         pass
 

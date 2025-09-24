@@ -4,7 +4,7 @@
 */
 const LLMEmbedding = (
   state = {
-    messages: "Welcome to CellWhisperer! To get started, please try some of the following options:\n\n1. Highlight your cells of interest, e.g. by typing \"Show me NK cells\" or \"search for inflammation\" in the text box below\n\n2. Select a group of cells, either by drawing a line around them, or via the search term histogram on the bottom left. Then, press the “Describe the selected pseudocell” button.\n\n3. Enter questions about your selected cells into the chat box, for example \"What distinguishes these cells from macrophages?\"\n\n4. You can also ask general questions, for example \"What is the role of IL-2R in natural killer cells?\"\n\n5. If a comment does not make sense to you, you can press the 👎 icon, and CellWhisperer will generate a new response.\n\n6. You can help us improve CellWhisperer by pressing the 👍 icon for answers that appear to be correct and useful.\n\n \n\nPlease keep in mind that CellWhisperer is an AI system and may produce incorrect or misleading results. CellWhisperer is best used as a tool for data exploration and hypothesis generation.",
+    messages: "Welcome to CellWhisperer! To get started, try this:\n\n1. Type \"Show me T cells\" in the text box below. CellWhisperer then searches and highlights cells similar to the text \"T cells\". \n\n2. Select a group of cells, either by drawing a line around them, or via the search term histogram on the bottom left. Then, press the “Describe the selected cells” button.\n\n3. Enter questions about your selected cells into the chat box, for example \"What distinguishes these cells from macrophages?\"\n\n4. You can also ask general questions, for example \"What is the role of IL-2R in natural killer cells?\"\n\n5. If a comment does not make sense to you, you can press the 👎 icon, and CellWhisperer will generate a new response.\n\n6. You can help us improve CellWhisperer by pressing the 👍 icon for answers that appear to be correct and useful.\n\n7. To start a new conversation or modify your requests, use the 📝 icon or select another set of cells. \n\n \n\nPlease keep in mind that CellWhisperer is an AI system and may produce misleading results. For example, it tends to work better with full terms rather than abbreviations. CellWhisperer is best used as a tool for data exploration and hypothesis generation.",
     loading: false,
     cellwhispererSearches: []
   },
@@ -47,11 +47,18 @@ const LLMEmbedding = (
       };
     }
 
+    case "chat loading finished": {
+      return {
+        ...state,
+        loading: false,
+      };
+    }
+
     case "chat reset": {
       return {
         ...state,
         // Add an empty message to the end of the list of messages
-        messages:  [],
+        messages: action.newMessages || [],
         // error: null,
       };
     }
@@ -70,7 +77,6 @@ const LLMEmbedding = (
         ...state,
         // Replace the last entry of messages
         messages: state.messages.slice(0, -1).concat({ value: action.payload, from: "gpt" }),
-        loading: false,
         // error: null,
       };
     }

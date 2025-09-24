@@ -9,7 +9,7 @@ const UndoRedo = React.memo((props) => {
   return (
     <ButtonGroup className={`${styles.menubarButton}`}>
       <Tooltip
-        content="Undo"
+        content="Undo (disabled in this version)"
         position="bottom"
         hoverOpenDelay={tooltipHoverOpenDelay}
       >
@@ -27,7 +27,7 @@ const UndoRedo = React.memo((props) => {
         />
       </Tooltip>
       <Tooltip
-        content="Redo"
+        content="Redo (disabled in this version)"
         position="bottom"
         hoverOpenDelay={tooltipHoverOpenDelay}
       >

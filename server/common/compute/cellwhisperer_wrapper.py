@@ -52,9 +52,10 @@ class CellWhispererWrapper:
         If things are cached already (through frozenmodel and/or the adaptor) this will be fast
 
         adaptor: Access to the adata object
+
+        NOTE: In a deployment setting with many services, this function might block/lock your server and lead to timeouts. Use with care.
         """
         logger.info("Preprocessing data for LLM embeddings, making sure it's fast")
-        return  # just for testing
 
         # Make sure that all the zero-shot class terms are embedded
         mask = np.zeros(adaptor.data.shape[0], dtype=bool)

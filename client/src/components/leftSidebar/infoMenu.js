@@ -9,10 +9,10 @@ const InformationMenu = React.memo((props) => {
       content={
         <Menu>
           <MenuItem
-            href="https://biorxiv.org/"
+            href="https://www.biorxiv.org/content/10.1101/2024.10.15.618501v1"
             target="_blank"
             icon="document"
-            text="CellWhisperer paper (TBD)"
+            text="CellWhisperer paper"
             rel="noopener"
           />
           <MenuItem
@@ -26,7 +26,13 @@ const InformationMenu = React.memo((props) => {
             href="https://github.com/epigen/cellwhisperer/issues"
             target="_blank"
             icon="chat"
-            text="Feedback"
+            text="Feedback (GitHub)"
+            rel="noopener"
+          />
+          <MenuItem
+            href="mailto:cellwhisperer@bocklab.org"
+            icon="at"
+            text="Feedback (Email)"
             rel="noopener"
           />
           <MenuItem

@@ -286,6 +286,7 @@ export default {
   requestEmbeddingLLMWithCells:
     llmEmbeddingsActions.requestEmbeddingLLMWithCells,
   startChatRequest: llmEmbeddingsActions.startChatRequest,
+  resetChat: llmEmbeddingsActions.resetChat,
   geneContributionRequest: llmEmbeddingsActions.geneContributionRequest,
   chatFeedback: llmEmbeddingsActions.chatFeedback,
 };

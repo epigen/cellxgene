@@ -70,9 +70,6 @@ export const requestEmbeddingLLMWithText =
     Send a request to the LLM embedding model with text
   */
   (text) => async (dispatch) => {
-    dispatch({
-      type: "request to embedding model started",
-    });
     try {
       const res = await fetch(
         `${globals.API.prefix}${globals.API.version}llmembs/text`,
@@ -93,13 +90,8 @@ export const requestEmbeddingLLMWithText =
         !res.ok ||
         res.headers.get("Content-Type") !== "application/octet-stream"
       ) {
-        return dispatch({
-          type: "request llm embeddings error",
-          error: new Error(
-            `Unexpected response ${res.status} ${
-              res.statusText
-            } ${res.headers.get("Content-Type")}}`
-          ),
+        dispatch({
+          type: "chat request failure", payload: `Unexpected response ${res.status} ${res.statusText} ${res.headers.get("Content-Type")}}`
         });
       }
 
@@ -113,12 +105,13 @@ export const requestEmbeddingLLMWithText =
         type: "embedding model annotation response from text",
       });
 
+      dispatch({ type: "chat request success", payload: `Here you go. Cells colored in red match well with '${text}', while cells colored in white and blue don't match this query. Select some cells to chat about them.` });
+
       return dispatch(annotationCreateContinuousAction(annotationName, col));
     } catch (error) {
-      return dispatch({
-        type: "request llm embeddings error",
-        error,
-      });
+        dispatch({
+          type: "chat request failure", payload: error
+        });
     }
   };
 
@@ -201,7 +194,7 @@ export const startChatRequest = (messages, prompt, cellSelection, temperature) =
 
       dispatch({ type: "chat request success", payload: data.text });
     }
-
+    dispatch({ type: "chat loading finished" });
   } catch (error) {
     dispatch({ type: "chat request failure", payload: error.message });
   }
@@ -249,6 +242,13 @@ export const chatFeedback = (messages, cellSelection, thumbDirection) => async (
   }
 };
 
+/*
+  Action creator to reset the chat box
+*/
+
+export const resetChat = (newMessages) => async (dispatch) => {
+  dispatch({ type: "chat reset", newMessages });
+};
 
 
 /*
