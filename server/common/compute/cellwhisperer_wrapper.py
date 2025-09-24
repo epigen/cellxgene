@@ -11,7 +11,7 @@ import pickle
 import torch
 
 from cellwhisperer.utils.inference import (
-    score_transcriptomes_vs_texts,
+    score_modality_vs_texts,
     rank_terms_by_score,
     prepare_terms,
     # gene_score_contributions,
@@ -105,8 +105,8 @@ class CellWhispererWrapper:
         terms_df = prepare_terms(terms)  # additional_text_dict
         text_embeds = self._embed_texts(terms_df["term"].to_list())
 
-        scores, _ = score_transcriptomes_vs_texts(
-            transcriptome_input=transcriptome_embeds,
+        scores, _ = score_modality_vs_texts(
+            modality_input=transcriptome_embeds,
             text_list_or_text_embeds=text_embeds,
             logit_scale=self.logit_scale,
             average_mode="embeddings",
@@ -171,8 +171,8 @@ class CellWhispererWrapper:
         assert len(texts) in [1, 2], "At max. one MINUS sign allowed"
         text_embeds = self._embed_texts(texts)
 
-        scores, _ = score_transcriptomes_vs_texts(
-            transcriptome_input=transcriptome_embeds,
+        scores, _ = score_modality_vs_texts(
+            modality_input=transcriptome_embeds,
             text_list_or_text_embeds=text_embeds,
             logit_scale=self.logit_scale,
             average_mode=None,
@@ -290,7 +290,7 @@ class CellWhispererWrapper:
         text_embeds = self._embed_texts([prompt])
 
         gene_contribs: pd.Series = gene_score_contributions(  # NOTE: note implemented
-            transcriptome_input=transcriptomes,
+            modality_input=transcriptomes,
             text_list_or_text_embeds=text_embeds,
             logit_scale=self.logit_scale,
             score_norm_method=None,
