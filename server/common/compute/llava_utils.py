@@ -16,7 +16,8 @@ from pathlib import Path
 # logger = build_logger("gradio_web_server", "gradio_web_server.log")
 logger = logging.getLogger("llava_utils")
 
-CONTROLLER_URL = "https://cellwhisperer.cemm.at/llava-controller"  # NOTE: would be nicer to have this configurable
+# CONTROLLER_URL = "https://cellwhisperer.cemm.at/llava-controller"  # NOTE: would be nicer to have this configurable
+WORKER_URL = "https://cellwhisperer.cemm.at/llava-model-worker"  # NOTE: would be nicer to have this configurable
 LOGDIR = Path(os.getenv("LOGDIR", "./logs/"))
 LOGDIR.mkdir(exist_ok=True)
 
@@ -132,8 +133,9 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, log=True
     #     state = new_state
 
     # Query worker address
-    ret = requests.post(CONTROLLER_URL + "/get_worker_address", json={"model": model_name})
-    worker_addr = ret.json()["address"]
+    # ret = requests.post(CONTROLLER_URL + "/get_worker_address", json={"model": model_name})
+    # worker_addr = ret.json()["address"]
+    worker_addr = WORKER_URL
     logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
 
     # No available worker
