@@ -13,7 +13,7 @@ with open("server/requirements-annotate.txt") as fh:
     requirements_annotate = fh.read().splitlines()
 
 setup(
-    name="cellxgene",
+    name="cellxgene-cellwhisperer",
     version="1.2.0",
     packages=find_packages(),
     url="https://github.com/chanzuckerberg/cellxgene",

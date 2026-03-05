@@ -17,7 +17,7 @@ clean:
 
 .PHONY: ci
 ci:
-	npm ci
+	PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci
 
 .PHONY: install
 install:
